@@ -1,0 +1,44 @@
+{
+  "name": "anima-companion",
+  "productName": "Anima",
+  "version": "1.0.0",
+  "description": "A floating 3D anime desktop companion powered by any LLM (Claude, GPT, Grok, Ollama).",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux"
+  },
+  "author": "M80AI",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^42.5.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.m80ai.anima",
+    "productName": "Anima",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "!**/*.md"
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": "nsis"
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "target": "dmg"
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": "AppImage",
+      "category": "Utility"
+    }
+  }
+}
