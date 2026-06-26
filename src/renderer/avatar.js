@@ -141,7 +141,7 @@ export class Avatar {
 
   // gesture / body controls
   playGesture(name) { this.gestures.play(name); }
-  setTalking(on) { this.gestures.setTalking(on); }
+  setTalking(on) { this._talking = on; this.gestures.setTalking(on); }
   setRelaxArms(on) { this.gestures.setRelaxArms(on); }
   setIdleMotion(on) { this.gestures.setIdle(on); }
 
@@ -171,8 +171,11 @@ export class Avatar {
       // expression cross-fade — blend toward the target mood's recipe of base
       // VRM expressions, so composite moods (joy, shy, love…) are possible.
       const recipe = EXPR_DEFS[this.targetExpr] || EXPR_DEFS.neutral;
+      // VRoid's happy/relaxed presets close the eyes into arcs; while she's
+      // talking, ease them back so she keeps her eyes open and looks engaged.
       for (const name of BASE_EXPR) {
-        const tgt = recipe[name] || 0;
+        let tgt = recipe[name] || 0;
+        if (this._talking && (name === 'happy' || name === 'relaxed')) tgt *= 0.45;
         this.exprWeights[name] = lerp(this.exprWeights[name] || 0, tgt, 0.12);
         try { em.setValue(name, this.exprWeights[name]); } catch { }
       }

@@ -81,7 +81,7 @@ const GESTURES = {
     const a = Math.sin(clamp(p) * Math.PI);
     return {
       rightUpperArm: { z: a * D * 0.4 },
-      rightLowerArm: { y: -a * 1.0 },
+      rightLowerArm: { y: a * 1.0 },
     };
   },
   nod(p) {                                      // gentle torso bob
@@ -129,12 +129,13 @@ const GESTURES = {
       leftUpperArm: { z: -env * D * 0.6 - s * 0.2 },
     };
   },
-  facepalm(p) {                                 // right hand to face, small slump
+  facepalm(p) {                                 // right hand up to the face, small slump
     const a = Math.sin(clamp(p) * Math.PI);
     return {
-      rightUpperArm: { z: a * D * 0.7, x: a * 0.3 },
-      rightLowerArm: { y: -a * 1.6 },
-      spine: { x: a * 0.06 },
+      rightUpperArm: { z: a * D * 0.5 },
+      rightLowerArm: { y: a * 1.8 },
+      spine: { x: a * 0.08 },
+      chest: { x: a * 0.04 },
     };
   },
   stretch(p) {                                  // both arms overhead, lean back
