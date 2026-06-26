@@ -228,7 +228,8 @@ window.addEventListener('mousemove', (e) => {
 
   if (!state.cfg.ghost) return;
   const el = document.elementFromPoint(e.clientX, e.clientY);
-  const interactive = !!(el && (el.closest('.interactive') || el.id === 'dragbar'));
+  const onPanel = !!(el && (el.closest('.interactive') || el.id === 'dragbar'));
+  const interactive = onPanel || avatar.hitTest(e.clientX, e.clientY);
   const nextIgnore = !interactive;
   if (nextIgnore !== lastIgnore) {
     window.anima.setMouseIgnore(nextIgnore);

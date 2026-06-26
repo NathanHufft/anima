@@ -54,7 +54,7 @@ export class Avatar {
   }
 
   _setupThree() {
-    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, alpha: true, antialias: true });
+    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, alpha: true, antialias: true, preserveDrawingBuffer: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(28, 1, 0.1, 20);
@@ -86,6 +86,27 @@ export class Avatar {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+  }
+
+  // True only when the cursor is over actually-drawn pixels (her body) or the
+  // fallback face. Ghost mode uses this so empty space stays click-through.
+  hitTest(clientX, clientY) {
+    const rect = this.canvas.getBoundingClientRect();
+    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return false;
+    if (this._fallbackMode) {
+      const f = this.fallbackEl.getBoundingClientRect();
+      return clientX >= f.left && clientX <= f.right && clientY >= f.top && clientY <= f.bottom;
+    }
+    try {
+      const gl = this.renderer.getContext();
+      const px = Math.floor((clientX - rect.left) * (this.canvas.width / rect.width));
+      const py = Math.floor((clientY - rect.top) * (this.canvas.height / rect.height));
+      const buf = new Uint8Array(4);
+      gl.readPixels(px, this.canvas.height - py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+      return buf[3] > 12;
+    } catch {
+      return true; // if we can't sample, default to interactive
+    }
   }
 
   async loadVRM(arrayBuffer) {
