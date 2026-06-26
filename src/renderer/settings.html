@@ -63,7 +63,8 @@
                 <p class="hint">For Azure, put your <b>deployment name</b> (e.g. grok-4-fast-non-reasoning) in the
                     <b>Model</b> field above. Easiest: paste the deployment's full <b>Target URI</b> here — it already
                     includes the deployment and api-version. This key is the Foundry model key, separate from the Speech
-                    key.</p>
+                    key.
+                </p>
             </div>
 
             <label class="field">
@@ -94,7 +95,8 @@
                     <input id="cfg-azureVoice" type="text" placeholder="en-US-JennyNeural" /></label>
                 <p class="hint">Warm picks: <b>en-US-JennyNeural</b>, <b>en-US-AvaMultilingualNeural</b>, or HD
                     <b>en-US-Ava:DragonHDLatestNeural</b> (auto-emotion). This key comes from an Azure <b>Speech</b>
-                    resource — not your model deployments.</p>
+                    resource — not your model deployments.
+                </p>
             </div>
             <div id="rows-eleven" hidden>
                 <label class="field"><span>ElevenLabs API key</span>
@@ -106,16 +108,18 @@
 
             <div class="divider"><span>Voice input (talk to her)</span></div>
             <label class="field">
-              <span>Speech-to-text</span>
-              <select id="cfg-stt-engine">
-                <option value="auto">Auto (use an available key)</option>
-                <option value="openai">OpenAI Whisper</option>
-                <option value="azure">Azure AI Speech</option>
-                <option value="elevenlabs">ElevenLabs</option>
-              </select>
+                <span>Speech-to-text</span>
+                <select id="cfg-stt-engine">
+                    <option value="auto">Auto (use an available key)</option>
+                    <option value="openai">OpenAI Whisper</option>
+                    <option value="azure">Azure AI Speech</option>
+                    <option value="elevenlabs">ElevenLabs</option>
+                </select>
             </label>
-            <label class="check"><input id="cfg-handsfree" type="checkbox" /> <span>Hands-free — keep listening after she replies</span></label>
-            <p class="hint">Click 🎤 in her dock and just talk; it sends automatically when you pause. Uses your OpenAI, Azure Speech, or ElevenLabs key (the same keys as above).</p>
+            <label class="check"><input id="cfg-handsfree" type="checkbox" /> <span>Hands-free — keep listening after
+                    she replies</span></label>
+            <p class="hint">Click 🎤 in her dock and just talk; it sends automatically when you pause. Uses your OpenAI,
+                Azure Speech, or ElevenLabs key (the same keys as above).</p>
 
             <div class="divider"><span>Avatar</span></div>
             <div class="vrm-row">
