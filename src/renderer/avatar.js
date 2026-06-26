@@ -10,7 +10,24 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { Gesturizer } from './poses.js';
 
-const EXPR = ['happy', 'angry', 'sad', 'relaxed', 'surprised', 'neutral'];
+// Each mood is a recipe of base VRM expressions (plus optional eyelid control:
+// `blink` half-closes both eyes, `blinkRight` winks one), so we can express
+// composite feelings well beyond the six standard VRM presets.
+const EXPR_DEFS = {
+  neutral: {},
+  happy: { happy: 1 },
+  angry: { angry: 1 },
+  sad: { sad: 1 },
+  relaxed: { relaxed: 1 },
+  surprised: { surprised: 1 },
+  joy: { happy: 1, surprised: 0.35 },
+  smug: { happy: 0.45, relaxed: 0.5 },
+  shy: { happy: 0.4, sad: 0.22, relaxed: 0.4 },
+  love: { happy: 0.9, relaxed: 0.35 },
+  sleepy: { relaxed: 0.8, sad: 0.12, blink: 0.5 },
+  wink: { happy: 0.7, blinkRight: 1 },
+};
+const BASE_EXPR = ['happy', 'angry', 'sad', 'relaxed', 'surprised'];
 
 export class Avatar {
   constructor({ canvas, fallbackEl }) {
@@ -76,15 +93,15 @@ export class Avatar {
     loader.register((parser) => new VRMLoaderPlugin(parser));
     const gltf = await loader.parseAsync(arrayBuffer, '');
     const vrm = gltf.userData.vrm;
-    try { VRMUtils.removeUnnecessaryVertices(gltf.scene); } catch {}
-    try { VRMUtils.removeUnnecessaryJoints(gltf.scene); } catch {}
+    try { VRMUtils.removeUnnecessaryVertices(gltf.scene); } catch { }
+    try { VRMUtils.removeUnnecessaryJoints(gltf.scene); } catch { }
 
     if (this.vrm) this.scene.remove(this.vrm.scene);
     this.vrm = vrm;
     this.scene.add(vrm.scene);
 
     // VRM 0.x faces -Z; rotate to face the camera.
-    try { VRMUtils.rotateVRM0(vrm); } catch {}
+    try { VRMUtils.rotateVRM0(vrm); } catch { }
     vrm.scene.rotation.y = vrm.meta?.metaVersion === '0' ? Math.PI : 0;
 
     if (vrm.lookAt) { vrm.lookAt.target = this.lookTarget; vrm.lookAt.autoUpdate = true; }
@@ -115,7 +132,7 @@ export class Avatar {
 
   setMouth(v) { this.mouth = Math.max(0, Math.min(1, v)); }
   setExpression(name) {
-    this.targetExpr = EXPR.includes(name) ? name : 'neutral';
+    this.targetExpr = EXPR_DEFS[name] ? name : 'neutral';
     this.gestures.setMood(this.targetExpr);
     this.fallback.setExpression(this.targetExpr);
   }
@@ -151,18 +168,24 @@ export class Avatar {
 
     const em = this.vrm.expressionManager;
     if (em) {
-      // expression cross-fade
-      for (const name of EXPR) {
-        if (name === 'neutral') continue;
-        const target = this.targetExpr === name ? 1 : 0;
-        this.exprWeights[name] = lerp(this.exprWeights[name] || 0, target, 0.12);
-        try { em.setValue(name, this.exprWeights[name]); } catch {}
+      // expression cross-fade — blend toward the target mood's recipe of base
+      // VRM expressions, so composite moods (joy, shy, love…) are possible.
+      const recipe = EXPR_DEFS[this.targetExpr] || EXPR_DEFS.neutral;
+      for (const name of BASE_EXPR) {
+        const tgt = recipe[name] || 0;
+        this.exprWeights[name] = lerp(this.exprWeights[name] || 0, tgt, 0.12);
+        try { em.setValue(name, this.exprWeights[name]); } catch { }
       }
+      // some moods hold the eyes (half-)closed (sleepy) or wink one eye
+      this._exprBlink = lerp(this._exprBlink || 0, recipe.blink || 0, 0.12);
+      this._exprWink = lerp(this._exprWink || 0, recipe.blinkRight || 0, 0.12);
+
       // lip-sync: drive the open-mouth viseme
-      try { em.setValue('aa', this.mouth * 0.9); } catch {}
-      try { em.setValue('ih', this.mouth * 0.2); } catch {}
-      // blink
-      try { em.setValue('blink', Math.min(1, this._blink)); } catch {}
+      try { em.setValue('aa', this.mouth * 0.9); } catch { }
+      try { em.setValue('ih', this.mouth * 0.2); } catch { }
+      // blink: max of the auto-blink and any mood-held lid; optional one-eye wink
+      try { em.setValue('blink', Math.min(1, Math.max(this._blink, this._exprBlink))); } catch { }
+      if (this._exprWink > 0.01) { try { em.setValue('blinkRight', this._exprWink); } catch { } }
     }
 
     // gentle breathing, weight-shift, mood posture, gestures, talk movement.

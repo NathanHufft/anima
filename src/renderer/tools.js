@@ -12,40 +12,60 @@
 // ============================================================================
 
 const SELF_TOOLS = [
-  { name: 'set_expression',
+  {
+    name: 'set_expression',
     description: "Set your facial expression to reflect how you genuinely feel right now.",
-    parameters: { type: 'object', properties: {
-      mood: { type: 'string', enum: ['happy','sad','angry','surprised','relaxed','neutral'] }
-    }, required: ['mood'] } },
-  { name: 'play_gesture',
+    parameters: {
+      type: 'object', properties: {
+        mood: { type: 'string', enum: ['happy', 'sad', 'angry', 'surprised', 'relaxed', 'neutral', 'joy', 'smug', 'shy', 'love', 'sleepy', 'wink'] }
+      }, required: ['mood']
+    }
+  },
+  {
+    name: 'play_gesture',
     description: "Play a short body gesture/animation to express yourself.",
-    parameters: { type: 'object', properties: {
-      gesture: { type: 'string', enum: ['wave','cheer','think','nod','recoil'] }
-    }, required: ['gesture'] } },
+    parameters: {
+      type: 'object', properties: {
+        gesture: { type: 'string', enum: ['wave', 'cheer', 'think', 'nod', 'recoil', 'bow', 'shrug', 'point', 'clap', 'peace', 'dance', 'facepalm', 'stretch'] }
+      }, required: ['gesture']
+    }
+  },
 ];
 
 const MEMORY_TOOLS = [
-  { name: 'remember',
+  {
+    name: 'remember',
     description: "Save a durable fact about the user or your relationship, so you still know it in future sessions. Use a short, descriptive key.",
-    parameters: { type: 'object', properties: {
-      key: { type: 'string', description: 'short label, e.g. "user_name" or "favorite_color"' },
-      value: { type: 'string' }
-    }, required: ['key','value'] } },
-  { name: 'recall',
+    parameters: {
+      type: 'object', properties: {
+        key: { type: 'string', description: 'short label, e.g. "user_name" or "favorite_color"' },
+        value: { type: 'string' }
+      }, required: ['key', 'value']
+    }
+  },
+  {
+    name: 'recall',
     description: "Look up something you previously remembered. Omit key to list everything you know.",
-    parameters: { type: 'object', properties: { key: { type: 'string' } }, required: [] } },
-  { name: 'forget',
+    parameters: { type: 'object', properties: { key: { type: 'string' } }, required: [] }
+  },
+  {
+    name: 'forget',
     description: "Delete a fact you previously remembered.",
-    parameters: { type: 'object', properties: { key: { type: 'string' } }, required: ['key'] } },
+    parameters: { type: 'object', properties: { key: { type: 'string' } }, required: ['key'] }
+  },
 ];
 
 const WEB_TOOLS = [
-  { name: 'search_web',
+  {
+    name: 'search_web',
     description: "Search the web for current/factual information. Returns top results with titles, links, and snippets.",
-    parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] } },
-  { name: 'fetch_page',
+    parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }
+  },
+  {
+    name: 'fetch_page',
     description: "Fetch the readable text of a specific web page by URL (e.g. a result from search_web).",
-    parameters: { type: 'object', properties: { url: { type: 'string' } }, required: ['url'] } },
+    parameters: { type: 'object', properties: { url: { type: 'string' } }, required: ['url'] }
+  },
 ];
 
 export function toolDefs({ self = true, memory = true, web = true } = {}) {
@@ -93,7 +113,7 @@ export function makeRunTool(ctx) {
       case 'recall': {
         const m = memoryAll();
         if (args.key) return m[args.key] != null ? `${args.key}: ${m[args.key]}`
-                                                  : `Nothing saved under "${args.key}".`;
+          : `Nothing saved under "${args.key}".`;
         const keys = Object.keys(m);
         return keys.length ? keys.map(k => `${k}: ${m[k]}`).join('\n') : 'No memories saved yet.';
       }

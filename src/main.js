@@ -12,6 +12,7 @@ const fs = require('fs');
 const CONFIG_PATH = () => path.join(app.getPath('userData'), 'config.json');
 
 let win = null;
+let settingsWin = null;
 let tray = null;
 let ghost = false; // click-through enabled
 
@@ -89,6 +90,50 @@ function createWindow() {
 }
 
 // ---------------------------------------------------------------------------
+// Settings window — a normal, detached window so you can test expressions and
+// gestures live while still watching the companion. It talks to the companion
+// window through the main process (see the `companion:command` relay below).
+// ---------------------------------------------------------------------------
+function openSettingsWindow() {
+  if (settingsWin && !settingsWin.isDestroyed()) {
+    settingsWin.show();
+    settingsWin.focus();
+    return;
+  }
+
+  const { workArea } = screen.getPrimaryDisplay();
+  const w = 460, h = 760;
+  settingsWin = new BrowserWindow({
+    width: w,
+    height: h,
+    x: workArea.x + 24,
+    y: workArea.y + Math.max(0, Math.round((workArea.height - h) / 2)),
+    title: 'Anima settings',
+    frame: true,
+    transparent: false,
+    backgroundColor: '#0d0b1a',
+    resizable: true,
+    minimizable: true,
+    alwaysOnTop: true,
+    skipTaskbar: false,
+    icon: path.join(__dirname, 'assets', 'icon-256.png'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  settingsWin.setMenuBarVisibility(false);
+  settingsWin.loadFile(path.join(__dirname, 'renderer', 'settings.html'));
+  settingsWin.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  settingsWin.on('closed', () => { settingsWin = null; });
+}
+
+// ---------------------------------------------------------------------------
 // Ghost mode (click-through). When on, the transparent areas let clicks pass
 // to whatever is behind the companion; the renderer re-enables interaction
 // when the cursor is over the avatar or a panel.
@@ -119,7 +164,7 @@ function buildTray() {
     { label: 'Hide', click: () => win.hide() },
     { type: 'separator' },
     { label: 'Ghost mode (click-through)', type: 'checkbox', checked: ghost, click: (i) => setGhost(i.checked) },
-    { label: 'Open settings', click: () => win.webContents.send('ui:open-settings') },
+    { label: 'Open settings', click: () => openSettingsWindow() },
     { type: 'separator' },
     { label: 'Quit Anima', click: () => { app.isQuiting = true; app.quit(); } }
   ]);
@@ -141,6 +186,16 @@ ipcMain.on('app:minimize', () => win && win.hide());
 ipcMain.on('ghost:set', (_e, on) => setGhost(on));
 ipcMain.on('window:resize', (_e, { width, height }) => {
   if (win) win.setSize(Math.round(width), Math.round(height), false);
+});
+
+// Detached settings window + companion command relay.
+ipcMain.on('settings:open', () => openSettingsWindow());
+ipcMain.on('settings:close', () => { if (settingsWin && !settingsWin.isDestroyed()) settingsWin.close(); });
+ipcMain.on('companion:command', (_e, cmd) => {
+  if (win && !win.isDestroyed()) win.webContents.send('companion:command', cmd);
+});
+ipcMain.on('config:broadcast', () => {
+  if (win && !win.isDestroyed()) win.webContents.send('config:changed');
 });
 
 // ---------------------------------------------------------------------------

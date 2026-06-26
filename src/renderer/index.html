@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Anima</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 
   <!-- three.js + three-vrm are loaded from CDN (this is a real desktop app with
@@ -21,6 +24,7 @@
   }
   </script>
 </head>
+
 <body>
   <!-- Drag handle strip (frameless window move) -->
   <div id="dragbar" aria-hidden="true"></div>
@@ -38,28 +42,35 @@
       <svg viewBox="0 0 220 240" id="face-svg">
         <defs>
           <radialGradient id="skin" cx="50%" cy="42%" r="65%">
-            <stop offset="0%" stop-color="#fff4ef"/><stop offset="100%" stop-color="#ffe0d6"/>
+            <stop offset="0%" stop-color="#fff4ef" />
+            <stop offset="100%" stop-color="#ffe0d6" />
           </radialGradient>
           <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#c9b3ff"/><stop offset="100%" stop-color="#8e7bd6"/>
+            <stop offset="0%" stop-color="#c9b3ff" />
+            <stop offset="100%" stop-color="#8e7bd6" />
           </linearGradient>
         </defs>
-        <path d="M40 120 Q30 30 110 26 Q190 30 180 120 L182 170 Q150 150 150 120 Q110 140 70 120 Q70 150 38 170 Z" fill="url(#hair)"/>
-        <ellipse cx="110" cy="128" rx="62" ry="70" fill="url(#skin)"/>
+        <path d="M40 120 Q30 30 110 26 Q190 30 180 120 L182 170 Q150 150 150 120 Q110 140 70 120 Q70 150 38 170 Z"
+          fill="url(#hair)" />
+        <ellipse cx="110" cy="128" rx="62" ry="70" fill="url(#skin)" />
         <g id="eyes">
-          <ellipse class="eye" cx="86" cy="126" rx="13" ry="17" fill="#3a2b5e"/>
-          <ellipse class="eye" cx="134" cy="126" rx="13" ry="17" fill="#3a2b5e"/>
-          <circle cx="90" cy="120" r="4" fill="#fff"/><circle cx="138" cy="120" r="4" fill="#fff"/>
+          <ellipse class="eye" cx="86" cy="126" rx="13" ry="17" fill="#3a2b5e" />
+          <ellipse class="eye" cx="134" cy="126" rx="13" ry="17" fill="#3a2b5e" />
+          <circle cx="90" cy="120" r="4" fill="#fff" />
+          <circle cx="138" cy="120" r="4" fill="#fff" />
         </g>
-        <ellipse class="blush" cx="74" cy="150" rx="12" ry="7" fill="#ffb4c4" opacity="0.6"/>
-        <ellipse class="blush" cx="146" cy="150" rx="12" ry="7" fill="#ffb4c4" opacity="0.6"/>
+        <ellipse class="blush" cx="74" cy="150" rx="12" ry="7" fill="#ffb4c4" opacity="0.6" />
+        <ellipse class="blush" cx="146" cy="150" rx="12" ry="7" fill="#ffb4c4" opacity="0.6" />
         <path id="mouth" d="M96 168 Q110 174 124 168" stroke="#c66" stroke-width="3" fill="#e98" />
-        <path d="M40 120 Q60 60 110 58 Q120 92 150 88 Q170 80 180 120 L178 96 Q150 24 110 26 Q58 28 42 96 Z" fill="url(#hair)"/>
+        <path d="M40 120 Q60 60 110 58 Q120 92 150 88 Q170 80 180 120 L178 96 Q150 24 110 26 Q58 28 42 96 Z"
+          fill="url(#hair)" />
       </svg>
     </div>
 
     <!-- Speech bubble -->
-    <div id="bubble" class="hidden"><div id="bubble-text"></div></div>
+    <div id="bubble" class="hidden">
+      <div id="bubble-text"></div>
+    </div>
 
     <!-- Status pip -->
     <div id="status" class="idle">idle</div>
@@ -67,138 +78,14 @@
 
   <!-- ===================== DOCK ===================== -->
   <div id="dock" class="interactive">
-    <button id="btn-settings" class="icon-btn" title="Settings">⚙</button>
+    <div id="grip" class="grip" title="Drag to move the window">⋮⋮</div> <button id="btn-settings" class="icon-btn"
+      title="Settings">⚙</button>
     <input id="say" type="text" placeholder="say something to her…" autocomplete="off" />
     <button id="btn-send" class="send-btn" title="Send">➤</button>
     <button id="btn-mute" class="icon-btn" title="Mute voice">🔊</button>
   </div>
 
-  <!-- ===================== SETTINGS ===================== -->
-  <section id="settings" class="interactive hidden">
-    <header>
-      <h2>Anima settings</h2>
-      <button id="btn-close-settings" class="icon-btn" title="Close">✕</button>
-    </header>
-
-    <div class="scroll">
-      <label class="field">
-        <span>Her name</span>
-        <input id="cfg-name" type="text" placeholder="Cici" />
-      </label>
-
-      <label class="field">
-        <span>Brain (provider)</span>
-        <select id="cfg-provider">
-          <option value="anthropic">Claude — Anthropic</option>
-          <option value="openai">GPT — OpenAI</option>
-          <option value="grok">Grok — xAI</option>
-          <option value="azure">Azure AI Foundry (Grok, etc.)</option>
-          <option value="ollama">Local — Ollama</option>
-        </select>
-      </label>
-
-      <label class="field">
-        <span>Model</span>
-        <input id="cfg-model" type="text" placeholder="claude-sonnet-4-6" />
-      </label>
-
-      <div class="keys">
-        <label class="field"><span>Anthropic API key</span>
-          <input id="cfg-anthropicKey" type="password" placeholder="sk-ant-…" /></label>
-        <label class="field"><span>OpenAI API key</span>
-          <input id="cfg-openaiKey" type="password" placeholder="sk-…" /></label>
-        <label class="field"><span>xAI (Grok) API key</span>
-          <input id="cfg-grokKey" type="password" placeholder="xai-…" /></label>
-        <label class="field"><span>Ollama URL</span>
-          <input id="cfg-ollamaUrl" type="text" placeholder="http://localhost:11434" /></label>
-        <label class="field"><span>Azure endpoint or full URL</span>
-          <input id="cfg-azureEndpoint" type="text" placeholder="https://<resource>.services.ai.azure.com" /></label>
-        <label class="field"><span>Azure API key</span>
-          <input id="cfg-azureApiKey" type="password" placeholder="for Grok / Foundry models" /></label>
-        <label class="field"><span>Azure API version</span>
-          <input id="cfg-azureApiVersion" type="text" placeholder="2025-01-01-preview" /></label>
-        <p class="hint">For Azure, put your <b>deployment name</b> (e.g. grok-4-fast-non-reasoning) in the <b>Model</b> field above. Easiest: paste the deployment's full <b>Target URI</b> here — it already includes the deployment and api-version. This key is the Foundry model key, separate from the Speech key.</p>
-      </div>
-
-      <label class="field">
-        <span>Personality (system prompt)</span>
-        <textarea id="cfg-persona" rows="4" placeholder="You are Cici, a warm, witty anime companion…"></textarea>
-      </label>
-
-      <div class="divider"><span>Voice</span></div>
-      <label class="field">
-        <span>Voice engine</span>
-        <select id="cfg-voice-engine">
-          <option value="browser">Built-in (offline)</option>
-          <option value="azure">Azure AI Speech</option>
-          <option value="elevenlabs">ElevenLabs</option>
-        </select>
-      </label>
-      <label class="field" id="row-browser-voice">
-        <span>System voice</span>
-        <select id="cfg-browser-voice"></select>
-      </label>
-      <div id="rows-azure" hidden>
-        <label class="field"><span>Azure Speech key</span>
-          <input id="cfg-azureSpeechKey" type="password" placeholder="from your Speech resource" /></label>
-        <label class="field"><span>Region</span>
-          <input id="cfg-azureRegion" type="text" placeholder="eastus" /></label>
-        <label class="field"><span>Voice name</span>
-          <input id="cfg-azureVoice" type="text" placeholder="en-US-JennyNeural" /></label>
-        <p class="hint">Warm picks: <b>en-US-JennyNeural</b>, <b>en-US-AvaMultilingualNeural</b>, or HD <b>en-US-Ava:DragonHDLatestNeural</b> (auto-emotion). This key comes from an Azure <b>Speech</b> resource — not your model deployments.</p>
-      </div>
-      <div id="rows-eleven" hidden>
-        <label class="field"><span>ElevenLabs API key</span>
-          <input id="cfg-elevenLabsKey" type="password" placeholder="…" /></label>
-        <label class="field"><span>ElevenLabs voice ID</span>
-          <input id="cfg-elevenVoice" type="text" placeholder="21m00Tcm4TlvDq8ikWAM" /></label>
-      </div>
-      <button id="btn-test-voice" class="ghost-btn">Test voice</button>
-
-      <div class="divider"><span>Avatar</span></div>
-      <div class="vrm-row">
-        <button id="btn-load-vrm" class="ghost-btn">Load .vrm model…</button>
-        <span id="vrm-name" class="muted">using fallback face</span>
-        <input id="vrm-file" type="file" accept=".vrm" hidden />
-      </div>
-      <p class="hint">No model yet? Make one free in <a href="https://vroid.com/en/studio" target="_blank">VRoid Studio</a> and export as <b>.vrm</b>, then load it here.</p>
-
-      <div class="divider"><span>Behaviour</span></div>
-      <label class="check"><input id="cfg-ghost" type="checkbox" /> <span>Ghost mode — float on desktop, click through</span></label>
-      <label class="check"><input id="cfg-follow" type="checkbox" checked /> <span>Eyes follow the cursor</span></label>
-      <label class="check"><input id="cfg-relax" type="checkbox" checked /> <span>Relax arms to her sides</span></label>
-      <label class="check"><input id="cfg-idle" type="checkbox" checked /> <span>Idle motion &amp; breeze (hair / skirt sway)</span></label>
-
-      <div class="divider"><span>Abilities</span></div>
-      <label class="check"><input id="cfg-tools-self" type="checkbox" checked /> <span>Let her control her own expressions &amp; gestures</span></label>
-      <label class="check"><input id="cfg-tools-memory" type="checkbox" checked /> <span>Let her remember things across sessions</span></label>
-      <label class="check"><input id="cfg-tools-web" type="checkbox" checked /> <span>Let her search &amp; read the web</span></label>
-
-      <div class="exprs">
-        <span class="muted">Test expressions:</span>
-        <button data-expr="happy">happy</button>
-        <button data-expr="relaxed">relaxed</button>
-        <button data-expr="surprised">surprised</button>
-        <button data-expr="sad">sad</button>
-        <button data-expr="angry">angry</button>
-        <button data-expr="neutral">neutral</button>
-      </div>
-      <div class="exprs">
-        <span class="muted">Test gestures:</span>
-        <button data-gesture="wave">wave</button>
-        <button data-gesture="cheer">cheer</button>
-        <button data-gesture="think">think</button>
-        <button data-gesture="nod">nod</button>
-        <button data-gesture="recoil">recoil</button>
-      </div>
-    </div>
-
-    <footer>
-      <button id="btn-save" class="save-btn">Save</button>
-      <button id="btn-quit" class="quit-btn">Quit app</button>
-    </footer>
-  </section>
-
   <script type="module" src="app.js"></script>
 </body>
+
 </html>
