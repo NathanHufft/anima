@@ -9,6 +9,7 @@ import { Avatar } from './avatar.js';
 import { chat } from './llm.js';
 import { speak } from './voice.js';
 import { toolDefs, makeRunTool, memoryText } from './tools.js';
+import { Listener, sttAvailable } from './listen.js';
 
 const $ = (s) => document.querySelector(s);
 const MOOD_RE = /^\s*[\[(]\s*(happy|relaxed|surprised|sad|angry|neutral|joy|smug|shy|love|sleepy)\s*[\])]\s*/i;
@@ -23,6 +24,7 @@ const state = {
 const avatar = new Avatar({ canvas: $('#avatar-canvas'), fallbackEl: $('#fallback') });
 avatar.start();
 const runTool = makeRunTool({ avatar });
+const listener = new Listener();
 
 // ----------------------------------------------------------------- config
 // The settings UI now lives in its own window (settings.html / settings.js).
@@ -33,6 +35,7 @@ async function applyConfig() {
   const c = state.cfg;
   state.muted = !!c.muted;
   $('#btn-mute').textContent = state.muted ? '🔇' : '🔊';
+  state.handsFree = !!c.handsFree;
   avatar.setFollowCursor(c.follow !== false);
   avatar.setRelaxArms(c.relaxArms !== false);
   avatar.setIdleMotion(c.idle !== false);
@@ -144,6 +147,7 @@ function sayOut(text, mood = 'neutral') {
       setStatus('idle');
       setTimeout(() => avatar.setExpression('neutral'), 1200);
       setTimeout(() => $('#bubble').classList.add('hidden'), 6000);
+      if (state.handsFree && state.voiceLoop) setTimeout(() => startListening(), 500);
     }
   });
 
@@ -245,6 +249,39 @@ $('#btn-mute').addEventListener('click', () => {
   state.muted = !state.muted; state.cfg.muted = state.muted;
   $('#btn-mute').textContent = state.muted ? '🔇' : '🔊';
   if (state.muted && state.speaking) state.speaking.stop();
+});
+
+// ---- voice input (speech-to-text) ----
+function startListening() {
+  if (listener.active) return;
+  if (!sttAvailable(state.cfg)) {
+    showBubble('(add an OpenAI, Azure Speech, or ElevenLabs key in settings to talk)', true);
+    setTimeout(() => $('#bubble').classList.add('hidden'), 4500);
+    return;
+  }
+  state.voiceLoop = true;
+  listener.start({
+    cfg: state.cfg,
+    onState: (s) => {
+      const mic = $('#btn-mic');
+      if (s === 'listening') { setStatus('listening'); mic.classList.add('on'); }
+      else if (s === 'transcribing') { setStatus('thinking'); mic.classList.remove('on'); }
+      else { mic.classList.remove('on'); if (s === 'idle' && !state.thinking) setStatus('idle'); }
+    },
+    onLevel: (lvl) => setAura(lvl * 0.7),
+    onText: (text) => { $('#say').value = text; send(); },
+    onError: (e) => {
+      $('#btn-mic').classList.remove('on');
+      state.voiceLoop = false;
+      setStatus('error'); showBubble('(' + e.message + ')', true);
+      setTimeout(() => setStatus('idle'), 60);
+      setTimeout(() => $('#bubble').classList.add('hidden'), 5000);
+    }
+  });
+}
+$('#btn-mic').addEventListener('click', () => {
+  if (listener.active) { state.voiceLoop = false; listener.stop(); }
+  else startListening();
 });
 
 // commands relayed from the detached settings window

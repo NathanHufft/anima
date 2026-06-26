@@ -104,6 +104,19 @@
             </div>
             <button id="btn-test-voice" class="ghost-btn">Test voice</button>
 
+            <div class="divider"><span>Voice input (talk to her)</span></div>
+            <label class="field">
+              <span>Speech-to-text</span>
+              <select id="cfg-stt-engine">
+                <option value="auto">Auto (use an available key)</option>
+                <option value="openai">OpenAI Whisper</option>
+                <option value="azure">Azure AI Speech</option>
+                <option value="elevenlabs">ElevenLabs</option>
+              </select>
+            </label>
+            <label class="check"><input id="cfg-handsfree" type="checkbox" /> <span>Hands-free — keep listening after she replies</span></label>
+            <p class="hint">Click 🎤 in her dock and just talk; it sends automatically when you pause. Uses your OpenAI, Azure Speech, or ElevenLabs key (the same keys as above).</p>
+
             <div class="divider"><span>Avatar</span></div>
             <div class="vrm-row">
                 <button id="btn-load-vrm" class="ghost-btn">Load .vrm model…</button>

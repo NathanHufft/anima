@@ -42,6 +42,8 @@ async function loadConfig() {
     $('#cfg-tools-self').checked = c.toolsSelf !== false;
     $('#cfg-tools-memory').checked = c.toolsMemory !== false;
     $('#cfg-tools-web').checked = c.toolsWeb !== false;
+    $('#cfg-stt-engine').value = c.sttEngine || 'auto';
+    $('#cfg-handsfree').checked = !!c.handsFree;
     if (c.vrmName) $('#vrm-name').textContent = c.vrmName;
     reflectVoiceEngine();
     populateVoices();
@@ -75,6 +77,8 @@ async function saveConfig() {
     c.toolsSelf = $('#cfg-tools-self').checked;
     c.toolsMemory = $('#cfg-tools-memory').checked;
     c.toolsWeb = $('#cfg-tools-web').checked;
+    c.sttEngine = $('#cfg-stt-engine').value;
+    c.handsFree = $('#cfg-handsfree').checked;
     await window.anima.setConfig(c);
     window.anima.setGhost(c.ghost);
     window.anima.broadcastConfig(); // tell the companion to re-apply live

@@ -5,7 +5,7 @@
 //  through, and secure on-disk storage of settings + API keys.
 // ============================================================================
 
-const { app, BrowserWindow, Tray, Menu, ipcMain, screen, safeStorage, nativeImage, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, screen, safeStorage, nativeImage, shell, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -262,6 +262,13 @@ ipcMain.handle('tools:fetchPage', (_e, u) => toolFetchPage(u));
 // Lifecycle
 // ---------------------------------------------------------------------------
 app.whenReady().then(() => {
+  // allow microphone access (voice input) for our own renderer
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => {
+    cb(permission === 'media' || permission === 'audioCapture');
+  });
+  session.defaultSession.setPermissionCheckHandler((_wc, permission) =>
+    permission === 'media' || permission === 'audioCapture');
+
   createWindow();
   buildTray();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });

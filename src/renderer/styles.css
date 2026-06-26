@@ -243,6 +243,15 @@ button {
   background: var(--rose);
 }
 
+#status.listening {
+  color: var(--cyber);
+}
+
+#status.listening::before {
+  background: var(--cyber);
+  animation: pulse .7s infinite;
+}
+
 @keyframes pulse {
   50% {
     opacity: .35;
@@ -319,6 +328,12 @@ button {
 
 .icon-btn:hover {
   background: rgba(185, 160, 255, .16);
+}
+
+.icon-btn.on {
+  background: rgba(110, 231, 255, .22);
+  color: var(--cyber);
+  box-shadow: 0 0 0 2px rgba(110, 231, 255, .35) inset;
 }
 
 .send-btn {
