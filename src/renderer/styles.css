@@ -534,6 +534,65 @@ button {
   background: rgba(110, 231, 255, .16);
 }
 
+.pose-lab {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px 12px;
+  background: rgba(255, 255, 255, .025);
+  margin-top: 8px;
+}
+
+.pose-lab-top {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.pose-lab-actions {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.pose-bone {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.pose-bone-title {
+  color: var(--cyber);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.pose-axis {
+  display: grid;
+  grid-template-columns: 18px 1fr 54px;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  margin: 4px 0;
+}
+
+.pose-axis input[type="range"] {
+  width: 100%;
+}
+
+.pose-axis input[type="number"] {
+  width: 54px;
+  background: rgba(0, 0, 0, .3);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  padding: 4px 5px;
+  font-size: 12px;
+}
+
 #settings footer {
   display: flex;
   gap: 10px;

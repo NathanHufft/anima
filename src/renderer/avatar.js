@@ -165,6 +165,8 @@ export class Avatar {
   setTalking(on) { this._talking = on; this.gestures.setTalking(on); }
   setRelaxArms(on) { this.gestures.setRelaxArms(on); }
   setIdleMotion(on) { this.gestures.setIdle(on); }
+  setPoseOverrides(overrides) { this.gestures.setPoseOverrides(overrides); }
+  setPoseOverride(name, pose) { this.gestures.setPoseOverride(name, pose); }
 
   start() {
     const loop = () => {

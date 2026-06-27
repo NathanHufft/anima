@@ -39,6 +39,7 @@ async function applyConfig() {
   avatar.setFollowCursor(c.follow !== false);
   avatar.setRelaxArms(c.relaxArms !== false);
   avatar.setIdleMotion(c.idle !== false);
+  avatar.setPoseOverrides(c.poseOverrides || {});
 }
 
 function activeKey() {
@@ -290,6 +291,8 @@ window.anima.onCommand(async (cmd) => {
   switch (cmd.type) {
     case 'expression': avatar.setExpression(cmd.value); break;
     case 'gesture': avatar.playGesture(cmd.value); break;
+    case 'poseOverride': avatar.setPoseOverride(cmd.name, cmd.pose); break;
+    case 'posePreview': avatar.setPoseOverride(cmd.name, cmd.pose); avatar.playGesture(cmd.name); break;
     case 'testVoice': testVoice(cmd.opts || {}); break;
     case 'loadVRM':
       try { await idbPut('vrm', cmd.buffer); await idbPut('vrmName', cmd.name); } catch { }

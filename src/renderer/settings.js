@@ -8,9 +8,16 @@
 
 import { defaultModel } from './llm.js';
 import { listBrowserVoices } from './voice.js';
+import { POSES } from './poses.js';
 
 const $ = (s) => document.querySelector(s);
 let cfg = {};
+let poseOverrides = {};
+
+const POSE_BONES = ['hips', 'spine', 'chest', 'leftUpperArm', 'rightUpperArm',
+    'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand'];
+const AXES = ['x', 'y', 'z'];
+const clone = (v) => JSON.parse(JSON.stringify(v || {}));
 
 // ----------------------------------------------------------------- load
 async function loadConfig() {
@@ -44,9 +51,11 @@ async function loadConfig() {
     $('#cfg-tools-web').checked = c.toolsWeb !== false;
     $('#cfg-stt-engine').value = c.sttEngine || 'auto';
     $('#cfg-handsfree').checked = !!c.handsFree;
+    poseOverrides = clone(c.poseOverrides || {});
     if (c.vrmName) $('#vrm-name').textContent = c.vrmName;
     reflectVoiceEngine();
     populateVoices();
+    initPoseLab();
 }
 
 // ----------------------------------------------------------------- save
@@ -79,6 +88,7 @@ async function saveConfig() {
     c.toolsWeb = $('#cfg-tools-web').checked;
     c.sttEngine = $('#cfg-stt-engine').value;
     c.handsFree = $('#cfg-handsfree').checked;
+    c.poseOverrides = clone(poseOverrides);
     await window.anima.setConfig(c);
     window.anima.setGhost(c.ghost);
     window.anima.broadcastConfig(); // tell the companion to re-apply live
@@ -118,11 +128,104 @@ function currentVoiceOpts() {
     };
 }
 
+// ----------------------------------------------------------------- Pose Lab
+function poseBase(name) { return clone(POSES[name] || {}); }
+function currentPoseName() { return $('#pose-gesture').value || 'clap'; }
+function currentPose(name = currentPoseName()) { return clone(poseOverrides[name] || POSES[name] || {}); }
+
+function axisValue(pose, bone, axis) {
+    return Number((pose[bone] && pose[bone][axis]) || 0);
+}
+
+function setAxisValue(pose, bone, axis, value) {
+    const n = Math.round(Number(value) * 1000) / 1000;
+    if (!pose[bone]) pose[bone] = {};
+    if (Math.abs(n) < 0.001) delete pose[bone][axis];
+    else pose[bone][axis] = n;
+    if (!Object.keys(pose[bone]).length) delete pose[bone];
+}
+
+function updatePoseJson() {
+    $('#pose-json').value = JSON.stringify(currentPose(), null, 2);
+}
+
+function sendPosePreview(play = false) {
+    const name = currentPoseName();
+    const pose = currentPose(name);
+    window.anima.sendCommand({ type: play ? 'posePreview' : 'poseOverride', name, pose });
+}
+
+function renderPoseSliders() {
+    const name = currentPoseName();
+    const pose = currentPose(name);
+    const root = $('#pose-sliders');
+    root.innerHTML = '';
+    for (const bone of POSE_BONES) {
+        const wrap = document.createElement('div');
+        wrap.className = 'pose-bone';
+        wrap.innerHTML = `<div class="pose-bone-title">${bone}</div>`;
+        for (const axis of AXES) {
+            const val = axisValue(pose, bone, axis);
+            const row = document.createElement('label');
+            row.className = 'pose-axis';
+            row.innerHTML = `<span>${axis}</span><input type="range" min="-2" max="2" step="0.01" value="${val}"><input type="number" min="-2" max="2" step="0.01" value="${val.toFixed(2)}">`;
+            const range = row.querySelector('input[type="range"]');
+            const num = row.querySelector('input[type="number"]');
+            const apply = (value) => {
+                const next = currentPose(name);
+                setAxisValue(next, bone, axis, value);
+                poseOverrides[name] = next;
+                range.value = value;
+                num.value = Number(value).toFixed(2);
+                updatePoseJson();
+                sendPosePreview(false);
+            };
+            range.addEventListener('input', () => apply(range.value));
+            num.addEventListener('change', () => apply(num.value));
+            wrap.appendChild(row);
+        }
+        root.appendChild(wrap);
+    }
+    updatePoseJson();
+}
+
+function initPoseLab() {
+    const sel = $('#pose-gesture');
+    if (!sel.options.length) {
+        Object.keys(POSES).forEach(name => {
+            const o = document.createElement('option');
+            o.value = name; o.textContent = name;
+            sel.appendChild(o);
+        });
+    }
+    sel.value = sel.value || 'clap';
+    renderPoseSliders();
+}
+
 // ----------------------------------------------------------------- wiring
 $('#cfg-provider').addEventListener('change', (e) => {
     if (!$('#cfg-model').value.trim()) $('#cfg-model').placeholder = defaultModel(e.target.value);
 });
 $('#cfg-voice-engine').addEventListener('change', reflectVoiceEngine);
+
+$('#pose-gesture').addEventListener('change', renderPoseSliders);
+$('#pose-preview').addEventListener('click', () => sendPosePreview(true));
+$('#pose-reset').addEventListener('click', () => {
+    const name = currentPoseName();
+    delete poseOverrides[name];
+    renderPoseSliders();
+    window.anima.sendCommand({ type: 'poseOverride', name, pose: poseBase(name) });
+    window.anima.sendCommand({ type: 'gesture', value: name });
+});
+$('#pose-json').addEventListener('change', () => {
+    try {
+        poseOverrides[currentPoseName()] = JSON.parse($('#pose-json').value || '{}');
+        renderPoseSliders();
+        sendPosePreview(true);
+    } catch (e) {
+        $('#pose-json').value = 'Invalid JSON: ' + e.message;
+    }
+});
 
 $('#btn-test-voice').addEventListener('click', () =>
     window.anima.sendCommand({ type: 'testVoice', opts: currentVoiceOpts() }));

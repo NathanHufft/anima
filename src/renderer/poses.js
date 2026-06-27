@@ -62,7 +62,7 @@ const scalePose = (pose, amount) => {
   return out;
 };
 
-const POSES = {
+export const POSES = {
   think: {
     rightUpperArm: { z: D * 0.95, x: -0.45, y: -0.25 },
     rightLowerArm: { x: -1.0, y: 1.45 },
@@ -98,6 +98,9 @@ const POSES = {
   },
 };
 
+let poseOverrides = {};
+const poseFor = (name) => poseOverrides[name] || POSES[name];
+
 // ---- one-shot gesture timelines: gen(p 0..1) -> { bone:{x,y,z} } -------------
 // Arm raises are written as multiples of D so they track ARM_DOWN's sign:
 // right raise delta = +k*D, left raise delta = -k*D  (both lift the arm up).
@@ -124,7 +127,7 @@ const GESTURES = {
   },
   think(p) {                                    // bring right forearm up toward chin
     const a = Math.sin(clamp(p) * Math.PI);
-    return scalePose(POSES.think, a);
+    return scalePose(poseFor('think'), a);
   },
   nod(p) {                                      // gentle torso bob
     const a = Math.sin(p * Math.PI) * Math.sin(p * Math.PI * 3);
@@ -136,108 +139,25 @@ const GESTURES = {
   },
   shrug(p) {                                    // both shoulders up, palms turned out
     const a = Math.sin(clamp(p) * Math.PI);
-    return scalePose(POSES.shrug, a);
+    return scalePose(poseFor('shrug'), a);
   },
   point(p) {                                    // raise right arm forward to point
     const up = clamp(p / 0.2), down = 1 - clamp((p - 0.7) / 0.3), a = up * down;
-    return scalePose(POSES.point, a);
+    return scalePose(poseFor('point'), a);
   },
   clap(p) {                                     // bring forearms together, repeat
     const env = Math.sin(clamp(p) * Math.PI);
     const forward = Math.min(1, env * 1.35);
     const close = Math.max(0, env - 0.18) / 0.82;
     const tap = Math.sin(p * Math.PI * 8) * close;
+    const clap = poseFor('clap');
     return {
-      rightUpperArm: { x: POSES.clap.rightUpperArm.x * forward, z: POSES.clap.rightUpperArm.z * close },
-      leftUpperArm: { x: POSES.clap.leftUpperArm.x * forward, z: POSES.clap.leftUpperArm.z * close },
-      rightLowerArm: { x: -0.23 * forward - tap * 0.03, z: 0.39 * close + tap * 0.035 },
-      leftLowerArm: { x: -0.23 * forward - tap * 0.03, z: -0.39 * close - tap * 0.035 },
+      rightUpperArm: { x: (clap.rightUpperArm?.x || 0) * forward, z: (clap.rightUpperArm?.z || 0) * close },
+      leftUpperArm: { x: (clap.leftUpperArm?.x || 0) * forward, z: (clap.leftUpperArm?.z || 0) * close },
+      rightLowerArm: { x: (clap.rightLowerArm?.x || 0) * forward - tap * 0.03, z: (clap.rightLowerArm?.z || 0) * close + tap * 0.035 },
+      leftLowerArm: { x: (clap.leftLowerArm?.x || 0) * forward - tap * 0.03, z: (clap.leftLowerArm?.z || 0) * close - tap * 0.035 },
       chest: { x: -0.025 * env - Math.max(0, tap) * 0.006 },
     };
-  },
-  clapTryFoldPos(p) {                           // calibration: front + converge + positive forearm fold
-    const a = Math.sin(clamp(p) * Math.PI);
-    return {
-      rightUpperArm: { z: -a * D * 0.32, x: -a * 0.55 },
-      leftUpperArm: { z: a * D * 0.32, x: -a * 0.55 },
-      rightLowerArm: { x: a * 1.15 },
-      leftLowerArm: { x: a * 1.15 },
-      rightHand: { z: a * 0.04 },
-      leftHand: { z: -a * 0.04 },
-    };
-  },
-  clapTryFoldNeg(p) {                           // calibration: front + converge + negative forearm fold
-    const a = Math.sin(clamp(p) * Math.PI);
-    return {
-      rightUpperArm: { z: -a * D * 0.32, x: -a * 0.55 },
-      leftUpperArm: { z: a * D * 0.32, x: -a * 0.55 },
-      rightLowerArm: { x: -a * 1.15 },
-      leftLowerArm: { x: -a * 1.15 },
-      rightHand: { z: a * 0.04 },
-      leftHand: { z: -a * 0.04 },
-    };
-  },
-  clapTryForearmZPos(p) {                       // calibration: front + converge + positive forearm roll
-    const a = Math.sin(clamp(p) * Math.PI);
-    return {
-      rightUpperArm: { z: -a * D * 0.32, x: -a * 0.55 },
-      leftUpperArm: { z: a * D * 0.32, x: -a * 0.55 },
-      rightLowerArm: { z: a * 1.15 },
-      leftLowerArm: { z: -a * 1.15 },
-      rightHand: { z: a * 0.04 },
-      leftHand: { z: -a * 0.04 },
-    };
-  },
-  clapTryForearmZNeg(p) {                       // calibration: front + converge + negative forearm roll
-    const a = Math.sin(clamp(p) * Math.PI);
-    return {
-      rightUpperArm: { z: -a * D * 0.32, x: -a * 0.55 },
-      leftUpperArm: { z: a * D * 0.32, x: -a * 0.55 },
-      rightLowerArm: { z: -a * 1.15 },
-      leftLowerArm: { z: a * 1.15 },
-      rightHand: { z: a * 0.04 },
-      leftHand: { z: -a * 0.04 },
-    };
-  },
-  clapAxisElbowYPos(p) {                         // calibration: does this close or open elbows?
-    const a = Math.sin(clamp(p) * Math.PI);
-    return { rightLowerArm: { y: a * 1.1 }, leftLowerArm: { y: -a * 1.1 } };
-  },
-  clapAxisElbowYNeg(p) {                         // calibration: opposite elbow twist
-    const a = Math.sin(clamp(p) * Math.PI);
-    return { rightLowerArm: { y: -a * 1.1 }, leftLowerArm: { y: a * 1.1 } };
-  },
-  clapAxisElbowXPos(p) {                         // calibration: forearms front/back bend
-    const a = Math.sin(clamp(p) * Math.PI);
-    return { rightLowerArm: { x: a * 1.1 }, leftLowerArm: { x: a * 1.1 } };
-  },
-  clapAxisElbowXNeg(p) {                         // calibration: opposite forearm bend
-    const a = Math.sin(clamp(p) * Math.PI);
-    return { rightLowerArm: { x: -a * 1.1 }, leftLowerArm: { x: -a * 1.1 } };
-  },
-  clapAxisShoulderZ(p) {                         // calibration: light symmetric shoulder raise
-    const a = Math.sin(clamp(p) * Math.PI);
-    return { rightUpperArm: { z: a * D * 0.35 }, leftUpperArm: { z: -a * D * 0.35 } };
-  },
-  clapAxisShoulderZFlip(p) {                     // calibration: opposite symmetric shoulder raise
-    const a = Math.sin(clamp(p) * Math.PI);
-    return { rightUpperArm: { z: -a * D * 0.35 }, leftUpperArm: { z: a * D * 0.35 } };
-  },
-  clapAxisShoulderXPos(p) {                      // calibration: shoulder forward/back bend
-    const a = Math.sin(clamp(p) * Math.PI);
-    return { rightUpperArm: { x: a * 0.55 }, leftUpperArm: { x: a * 0.55 } };
-  },
-  clapAxisShoulderXNeg(p) {                      // calibration: opposite shoulder bend
-    const a = Math.sin(clamp(p) * Math.PI);
-    return { rightUpperArm: { x: -a * 0.55 }, leftUpperArm: { x: -a * 0.55 } };
-  },
-  clapAxisShoulderYForward(p) {                  // calibration: mirrored shoulder yaw from point()
-    const a = Math.sin(clamp(p) * Math.PI);
-    return { rightUpperArm: { y: -a * 0.55 }, leftUpperArm: { y: a * 0.55 } };
-  },
-  clapAxisShoulderYBack(p) {                     // calibration: opposite shoulder yaw
-    const a = Math.sin(clamp(p) * Math.PI);
-    return { rightUpperArm: { y: a * 0.55 }, leftUpperArm: { y: -a * 0.55 } };
   },
   peace(p) {                                    // right hand up by the head (✌ pose)
     const up = clamp(p / 0.2), down = 1 - clamp((p - 0.7) / 0.3), a = up * down;
@@ -259,7 +179,7 @@ const GESTURES = {
   },
   facepalm(p) {                                 // right hand up to the face, small slump
     const a = Math.sin(clamp(p) * Math.PI);
-    return scalePose(POSES.facepalm, a);
+    return scalePose(poseFor('facepalm'), a);
   },
   stretch(p) {                                  // both arms overhead, lean back
     const a = Math.sin(clamp(p) * Math.PI);
@@ -274,13 +194,6 @@ const GESTURE_DUR = {
   wave: 2.2, recoil: 0.7, cheer: 1.4, think: 1.8, nod: 0.9,
   bow: 1.8, shrug: 1.2, point: 1.6, clap: 1.6, peace: 1.6,
   dance: 3.0, facepalm: 1.8, stretch: 2.0,
-  clapAxisElbowYPos: 1.2, clapAxisElbowYNeg: 1.2,
-  clapAxisElbowXPos: 1.2, clapAxisElbowXNeg: 1.2,
-  clapAxisShoulderZ: 1.2, clapAxisShoulderZFlip: 1.2,
-  clapAxisShoulderXPos: 1.2, clapAxisShoulderXNeg: 1.2,
-  clapAxisShoulderYForward: 1.2, clapAxisShoulderYBack: 1.2,
-  clapTryFoldPos: 1.2, clapTryFoldNeg: 1.2,
-  clapTryForearmZPos: 1.2, clapTryForearmZNeg: 1.2,
 };
 
 export class Gesturizer {
@@ -315,6 +228,11 @@ export class Gesturizer {
   setIdle(v) { this.idle = v; }
   setMood(m) { this.mood = MOOD[m] ? m : 'relaxed'; }
   setTalking(v) { this.talking = v; }
+  setPoseOverrides(overrides) { poseOverrides = overrides || {}; }
+  setPoseOverride(name, pose) {
+    if (!name) return;
+    poseOverrides = { ...poseOverrides, [name]: pose };
+  }
   play(name) { if (GESTURES[name]) this.gesture = { name, t: 0, dur: GESTURE_DUR[name] || 1.5 }; }
 
   get(name) { return this.vrm?.humanoid?.getNormalizedBoneNode(name); }

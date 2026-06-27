@@ -178,20 +178,26 @@
                 <button data-gesture="dance">dance</button>
                 <button data-gesture="facepalm">facepalm</button>
                 <button data-gesture="stretch">stretch</button>
-                <button data-gesture="clapAxisElbowYPos">clap Y+</button>
-                <button data-gesture="clapAxisElbowYNeg">clap Y-</button>
-                <button data-gesture="clapAxisElbowXPos">clap X+</button>
-                <button data-gesture="clapAxisElbowXNeg">clap X-</button>
-                <button data-gesture="clapAxisShoulderZ">clap Z</button>
-                <button data-gesture="clapAxisShoulderZFlip">clap Z flip</button>
-                <button data-gesture="clapAxisShoulderXPos">clap shoulder X+</button>
-                <button data-gesture="clapAxisShoulderXNeg">clap shoulder X-</button>
-                <button data-gesture="clapAxisShoulderYForward">clap shoulder Y fwd</button>
-                <button data-gesture="clapAxisShoulderYBack">clap shoulder Y back</button>
-                <button data-gesture="clapTryFoldPos">clap try fold +</button>
-                <button data-gesture="clapTryFoldNeg">clap try fold -</button>
-                <button data-gesture="clapTryForearmZPos">clap forearm Z+</button>
-                <button data-gesture="clapTryForearmZNeg">clap forearm Z-</button>
+            </div>
+
+            <div class="divider"><span>Pose Lab</span></div>
+            <div class="pose-lab">
+                <div class="pose-lab-top">
+                    <label class="field">
+                        <span>Gesture</span>
+                        <select id="pose-gesture"></select>
+                    </label>
+                    <div class="pose-lab-actions">
+                        <button id="pose-preview" class="ghost-btn">Preview</button>
+                        <button id="pose-reset" class="ghost-btn">Reset</button>
+                    </div>
+                </div>
+                <div id="pose-sliders"></div>
+                <label class="field">
+                    <span>Exported pose JSON</span>
+                    <textarea id="pose-json" rows="5" spellcheck="false"></textarea>
+                </label>
+                <p class="hint">Adjust sliders and preview live on the avatar. Save persists the pose override locally; copy the JSON when you want to bake it into poses.js.</p>
             </div>
         </div>
 
