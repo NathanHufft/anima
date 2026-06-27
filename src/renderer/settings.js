@@ -49,6 +49,10 @@ async function loadConfig() {
     $('#cfg-tools-self').checked = c.toolsSelf !== false;
     $('#cfg-tools-memory').checked = c.toolsMemory !== false;
     $('#cfg-tools-web').checked = c.toolsWeb !== false;
+    $('#cfg-tools-files').checked = !!c.toolsFiles;
+    $('#cfg-tools-apps').checked = !!c.toolsApps;
+    $('#cfg-tools-shell').checked = !!c.toolsShell;
+    $('#cfg-tools-timers').checked = !!c.toolsTimers;
     $('#cfg-stt-engine').value = c.sttEngine || 'auto';
     $('#cfg-handsfree').checked = !!c.handsFree;
     poseOverrides = clone(c.poseOverrides || {});
@@ -86,6 +90,10 @@ async function saveConfig() {
     c.toolsSelf = $('#cfg-tools-self').checked;
     c.toolsMemory = $('#cfg-tools-memory').checked;
     c.toolsWeb = $('#cfg-tools-web').checked;
+    c.toolsFiles = $('#cfg-tools-files').checked;
+    c.toolsApps = $('#cfg-tools-apps').checked;
+    c.toolsShell = $('#cfg-tools-shell').checked;
+    c.toolsTimers = $('#cfg-tools-timers').checked;
     c.sttEngine = $('#cfg-stt-engine').value;
     c.handsFree = $('#cfg-handsfree').checked;
     c.poseOverrides = clone(poseOverrides);
@@ -255,6 +263,7 @@ $('#btn-save').addEventListener('click', async () => {
 });
 $('#btn-close-settings').addEventListener('click', () => window.anima.closeSettings());
 $('#btn-quit').addEventListener('click', () => window.anima.quit());
+$('#btn-open-workspace').addEventListener('click', () => window.anima.fsOpenWorkspace());
 
 if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = populateVoices;
 

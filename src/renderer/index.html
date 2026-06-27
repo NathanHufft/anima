@@ -85,6 +85,19 @@
       title="Talk to her (voice)">🎤</button> <button id="btn-mute" class="icon-btn" title="Mute voice">🔊</button>
   </div>
 
+  <!-- ===================== CONFIRM (agent action approval) ===================== -->
+  <div id="confirm" class="interactive hidden">
+    <div id="confirm-card">
+      <div id="confirm-title">Allow this?</div>
+      <div id="confirm-body"></div>
+      <pre id="confirm-detail" class="hidden"></pre>
+      <div id="confirm-actions">
+        <button id="confirm-deny" class="ghost-btn">Deny</button>
+        <button id="confirm-allow" class="save-btn">Allow</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="app.js"></script>
 </body>
 

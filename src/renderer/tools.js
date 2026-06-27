@@ -68,11 +68,62 @@ const WEB_TOOLS = [
   },
 ];
 
-export function toolDefs({ self = true, memory = true, web = true } = {}) {
+// Tier 4 — system. All sandboxed to her workspace folder; write/trash/open/run
+// each require the user's approval (handled in the renderer before dispatch).
+const FILES_TOOLS = [
+  {
+    name: 'list_files',
+    description: "List files in your private workspace folder on the user's computer. Optionally pass a subfolder path.",
+    parameters: { type: 'object', properties: { path: { type: 'string', description: 'optional subfolder; defaults to the workspace root' } }, required: [] }
+  },
+  {
+    name: 'read_file',
+    description: "Read a UTF-8 text file from your workspace folder.",
+    parameters: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] }
+  },
+  {
+    name: 'write_file',
+    description: "Create or overwrite a text file in your workspace folder. The user is shown the path and a preview and must approve before anything is written.",
+    parameters: { type: 'object', properties: { path: { type: 'string' }, content: { type: 'string' } }, required: ['path', 'content'] }
+  },
+  {
+    name: 'trash_file',
+    description: "Move a file in your workspace to the Recycle Bin (recoverable). The user must approve.",
+    parameters: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] }
+  },
+];
+const APPS_TOOLS = [
+  {
+    name: 'open_path',
+    description: "Open something on the user's computer: a file or folder in your workspace, an app, or a URL. The user must approve.",
+    parameters: { type: 'object', properties: { target: { type: 'string', description: 'a workspace file/folder path, an app name, or an http(s) URL' } }, required: ['target'] }
+  },
+];
+const SHELL_TOOLS = [
+  {
+    name: 'run_command',
+    description: "Run a single shell command on the user's computer. The working directory is your workspace. The user must approve every command; never run anything destructive without explaining it first in your own words.",
+    parameters: { type: 'object', properties: { command: { type: 'string' } }, required: ['command'] }
+  },
+];
+const TIMER_TOOLS = [
+  {
+    name: 'set_timer',
+    description: "Set a timer. When it elapses you'll be cued to tell the user out loud. Provide the duration in seconds and an optional label.",
+    parameters: { type: 'object', properties: { seconds: { type: 'number' }, label: { type: 'string' } }, required: ['seconds'] }
+  },
+];
+
+export function toolDefs({ self = true, memory = true, web = true,
+  files = false, apps = false, shell = false, timers = false } = {}) {
   return [
     ...(self ? SELF_TOOLS : []),
     ...(memory ? MEMORY_TOOLS : []),
-    ...(web ? WEB_TOOLS : [])
+    ...(web ? WEB_TOOLS : []),
+    ...(files ? FILES_TOOLS : []),
+    ...(apps ? APPS_TOOLS : []),
+    ...(shell ? SHELL_TOOLS : []),
+    ...(timers ? TIMER_TOOLS : [])
   ];
 }
 
@@ -95,6 +146,7 @@ export function memoryText() {
 // ----------------------------------------------------------------- dispatcher
 export function makeRunTool(ctx) {
   const { avatar } = ctx;
+  const confirm = ctx.confirm || (async () => false); // gated ops fail closed
   return async function runTool(name, args = {}) {
     switch (name) {
       // Tier 1 — self
@@ -130,6 +182,49 @@ export function makeRunTool(ctx) {
       case 'fetch_page':
         if (!window.anima?.fetchPage) return 'Web fetch is unavailable.';
         return await window.anima.fetchPage(String(args.url || ''));
+
+      // Tier 4 — files (sandboxed to the workspace folder)
+      case 'list_files':
+        if (!window.anima?.fsList) return 'Filesystem access is unavailable.';
+        return await window.anima.fsList(String(args.path || '.'));
+      case 'read_file':
+        if (!window.anima?.fsRead) return 'Filesystem access is unavailable.';
+        return await window.anima.fsRead(String(args.path || ''));
+      case 'write_file': {
+        if (!window.anima?.fsWrite) return 'Filesystem access is unavailable.';
+        const preview = String(args.content == null ? '' : args.content);
+        const ok = await confirm({ title: 'Write file', body: String(args.path || ''),
+          detail: preview.slice(0, 400) + (preview.length > 400 ? '…' : '') });
+        if (!ok) return 'The user declined to write that file.';
+        return await window.anima.fsWrite(String(args.path || ''), preview);
+      }
+      case 'trash_file': {
+        if (!window.anima?.fsTrash) return 'Filesystem access is unavailable.';
+        const ok = await confirm({ title: 'Move to Recycle Bin', body: String(args.path || ''), danger: true });
+        if (!ok) return 'The user declined.';
+        return await window.anima.fsTrash(String(args.path || ''));
+      }
+
+      // Tier 4 — apps / links
+      case 'open_path': {
+        if (!window.anima?.openPath) return 'Opening is unavailable.';
+        const ok = await confirm({ title: 'Open this?', body: String(args.target || '') });
+        if (!ok) return 'The user declined to open that.';
+        return await window.anima.openPath(String(args.target || ''));
+      }
+
+      // Tier 4 — shell
+      case 'run_command': {
+        if (!window.anima?.runCommand) return 'Commands are unavailable.';
+        const ok = await confirm({ title: 'Run this command?', body: String(args.command || ''), danger: true });
+        if (!ok) return 'The user declined to run that command.';
+        return await window.anima.runCommand(String(args.command || ''));
+      }
+
+      // Tier 4 — timers
+      case 'set_timer':
+        if (!window.anima?.setTimer) return 'Timers are unavailable.';
+        return await window.anima.setTimer(Number(args.seconds) || 0, String(args.label || ''));
 
       default:
         return `Unknown tool: ${name}`;

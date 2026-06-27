@@ -620,6 +620,67 @@ button {
   font-size: 13px;
 }
 
+/* agent action approval modal */
+#confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 4, 14, 0.5);
+  backdrop-filter: blur(4px);
+}
+#confirm-card {
+  width: 300px;
+  max-width: 88%;
+  background: rgba(17, 14, 30, 0.97);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+#confirm-title {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  color: var(--bloom);
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+#confirm-body {
+  font-size: 13px;
+  color: var(--ink);
+  word-break: break-word;
+}
+#confirm-detail {
+  margin: 8px 0 0;
+  max-height: 160px;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: pre-wrap;
+  user-select: text;
+  -webkit-user-select: text;
+}
+#confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+#confirm-actions .ghost-btn,
+#confirm-actions .save-btn {
+  flex: 0 0 auto;
+  padding: 9px 16px;
+}
+.save-btn.danger {
+  background: linear-gradient(135deg, var(--rose), #d65f7a);
+  color: #fff;
+}
+
 .hidden {
   display: none !important;
 }

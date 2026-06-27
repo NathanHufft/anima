@@ -178,7 +178,7 @@ async function ollama({ url, model, system, history }) {
 // Agentic tool loops. The model may request tools; we run them via onToolCall
 // and feed results back until it produces a final spoken reply (capped rounds).
 // ---------------------------------------------------------------------------
-const MAX_TOOL_ROUNDS = 5;
+const MAX_TOOL_ROUNDS = 8;
 
 function toOpenAITools(defs) {
   return defs.map(d => ({ type: 'function',

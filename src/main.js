@@ -8,6 +8,7 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, screen, safeStorage, nativeImage, shell, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { exec } = require('child_process');
 
 const CONFIG_PATH = () => path.join(app.getPath('userData'), 'config.json');
 
@@ -257,6 +258,104 @@ async function toolFetchPage(url) {
 
 ipcMain.handle('tools:searchWeb', (_e, q) => toolSearchWeb(q));
 ipcMain.handle('tools:fetchPage', (_e, u) => toolFetchPage(u));
+
+// ---------------------------------------------------------------------------
+// Agent tools (Tier 4 — system: files / apps / shell / timers).
+// Filesystem access is sandboxed to ONE workspace folder; path traversal out of
+// it is rejected here regardless of what the renderer asks. Side-effectful
+// actions (write / trash / open / run) are also gated by a confirmation prompt
+// in the renderer BEFORE these handlers are invoked — this is defence in depth.
+// ---------------------------------------------------------------------------
+const WORKSPACE = () => path.join(app.getPath('home'), 'AnimaWorkspace');
+function ensureWorkspace() { fs.mkdirSync(WORKSPACE(), { recursive: true }); return WORKSPACE(); }
+function safePath(rel) {
+  const root = ensureWorkspace();
+  const p = path.resolve(root, String(rel || '.'));
+  if (p !== root && !p.startsWith(root + path.sep)) throw new Error('Path is outside the Anima workspace.');
+  return p;
+}
+function relName(p) { return path.relative(WORKSPACE(), p) || '.'; }
+
+ipcMain.handle('fs:workspace', () => ensureWorkspace());
+ipcMain.handle('fs:openWorkspace', async () => { const e = await shell.openPath(ensureWorkspace()); return e || 'ok'; });
+
+ipcMain.handle('fs:list', (_e, rel) => {
+  try {
+    const dir = safePath(rel || '.');
+    if (!fs.existsSync(dir)) return `Nothing at ${relName(dir)} yet.`;
+    const items = fs.readdirSync(dir, { withFileTypes: true }).map(d => {
+      let size = 0; try { if (d.isFile()) size = fs.statSync(path.join(dir, d.name)).size; } catch {}
+      return (d.isDirectory() ? '[dir] ' : '      ') + d.name + (d.isFile() ? `  (${size} bytes)` : '');
+    });
+    return items.length ? `${relName(dir)}/\n` + items.join('\n') : `${relName(dir)}/ is empty.`;
+  } catch (e) { return 'Error: ' + e.message; }
+});
+
+ipcMain.handle('fs:read', (_e, rel) => {
+  try {
+    const p = safePath(rel);
+    const st = fs.statSync(p);
+    if (!st.isFile()) return 'Error: not a file.';
+    if (st.size > 200000) return 'Error: file is larger than 200 KB.';
+    return fs.readFileSync(p, 'utf8').slice(0, 100000);
+  } catch (e) { return 'Error: ' + e.message; }
+});
+
+ipcMain.handle('fs:write', (_e, { path: rel, content }) => {
+  try {
+    const p = safePath(rel);
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    const data = String(content == null ? '' : content);
+    fs.writeFileSync(p, data, 'utf8');
+    return `Wrote ${Buffer.byteLength(data)} bytes to ${relName(p)}.`;
+  } catch (e) { return 'Error: ' + e.message; }
+});
+
+ipcMain.handle('fs:trash', async (_e, rel) => {
+  try {
+    const p = safePath(rel);
+    if (!fs.existsSync(p)) return `Nothing at ${relName(p)}.`;
+    await shell.trashItem(p);
+    return `Moved ${relName(p)} to the Recycle Bin.`;
+  } catch (e) { return 'Error: ' + e.message; }
+});
+
+ipcMain.handle('os:openPath', async (_e, target) => {
+  try {
+    const t = String(target || '').trim();
+    if (!t) return 'Nothing to open.';
+    if (/^https?:\/\//i.test(t)) { await shell.openExternal(t); return `Opened ${t}`; }
+    let p = null;
+    try { p = safePath(t); } catch { p = null; }
+    if (p && fs.existsSync(p)) { const err = await shell.openPath(p); return err ? ('Error: ' + err) : `Opened ${relName(p)}`; }
+    const err = await shell.openPath(t);
+    if (err) { await shell.openExternal(t); }
+    return `Opened ${t}`;
+  } catch (e) { return 'Error: ' + e.message; }
+});
+
+ipcMain.handle('os:run', (_e, cmd) => new Promise((resolve) => {
+  const command = String(cmd || '').trim();
+  if (!command) return resolve('No command given.');
+  exec(command, { cwd: ensureWorkspace(), timeout: 15000, windowsHide: true, maxBuffer: 1024 * 1024 },
+    (error, stdout, stderr) => {
+      const out = String(stdout || '').slice(0, 4000);
+      const er = String(stderr || '').slice(0, 2000);
+      if (error && !out && !er) return resolve('Command error: ' + error.message);
+      resolve((`exit code ${error ? (error.code ?? 1) : 0}\n${out}${er ? '\n[stderr] ' + er : ''}`).trim());
+    });
+}));
+
+const animaTimers = new Set();
+ipcMain.handle('os:timer', (_e, { seconds, label }) => {
+  const s = Math.max(1, Math.min(86400, Math.round(Number(seconds) || 0)));
+  const id = setTimeout(() => {
+    animaTimers.delete(id);
+    if (win && !win.isDestroyed()) win.webContents.send('companion:timer', { label: String(label || '') });
+  }, s * 1000);
+  animaTimers.add(id);
+  return `Timer set for ${s} second${s === 1 ? '' : 's'}${label ? ` — ${label}` : ''}.`;
+});
 
 // ---------------------------------------------------------------------------
 // Lifecycle

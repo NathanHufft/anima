@@ -148,6 +148,19 @@
             <label class="check"><input id="cfg-tools-web" type="checkbox" checked /> <span>Let her search &amp; read
                     the web</span></label>
 
+            <div class="divider"><span>Agent mode · acts on your computer</span></div>
+            <label class="check"><input id="cfg-tools-files" type="checkbox" /> <span>Let her read &amp; write files in
+                    her workspace folder</span></label>
+            <label class="check"><input id="cfg-tools-apps" type="checkbox" /> <span>Let her open files, apps &amp;
+                    links <span class="muted">(asks first)</span></span></label>
+            <label class="check"><input id="cfg-tools-shell" type="checkbox" /> <span>Let her run shell commands
+                    <span class="muted">(asks first · advanced)</span></span></label>
+            <label class="check"><input id="cfg-tools-timers" type="checkbox" /> <span>Let her set timers</span></label>
+            <p class="hint">These act on your computer and are <b>off by default</b>. Her files stay inside a sandbox
+                folder — <b>AnimaWorkspace</b> in your home folder — and writing files, opening things, or running a
+                command each pop up an approval you must accept first.</p>
+            <button id="btn-open-workspace" class="ghost-btn">Open workspace folder…</button>
+
             <div class="exprs">
                 <span class="muted">Test expressions:</span>
                 <button data-expr="happy">happy</button>
