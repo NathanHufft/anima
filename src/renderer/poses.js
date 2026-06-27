@@ -63,11 +63,32 @@ const scalePose = (pose, amount) => {
 };
 
 export const POSES = {
+  wave: {
+    rightUpperArm: { z: D * 1.3 },
+    rightLowerArm: { x: 0.5 },
+    rightHand: { z: 0.3 },
+  },
+  recoil: {
+    spine: { x: -0.14 },
+    chest: { x: -0.06 },
+  },
+  cheer: {
+    rightUpperArm: { z: D * 1.8 },
+    leftUpperArm: { z: -D * 1.8 },
+  },
   think: {
     rightUpperArm: { z: D * 0.95, x: -0.45, y: -0.25 },
     rightLowerArm: { x: -1.0, y: 1.45 },
     rightHand: { x: -0.25 },
     chest: { y: 0.05 },
+  },
+  nod: {
+    spine: { x: 0.05 },
+  },
+  bow: {
+    spine: { x: 0.4 },
+    chest: { x: 0.18 },
+    hips: { x: 0.05 },
   },
   shrug: {
     rightUpperArm: { z: D * 0.65, x: 0.45, y: -0.25 },
@@ -89,12 +110,30 @@ export const POSES = {
     leftLowerArm: { x: -0.23, z: -0.39 },
     chest: { x: -0.025 },
   },
+  peace: {
+    rightUpperArm: { z: D * 1.5 },
+    rightLowerArm: { x: -1.4 },
+  },
+  dance: {
+    hips: { y: 0.16, z: 0.10 },
+    spine: { y: -0.10 },
+    chest: { y: 0.08 },
+    rightUpperArm: { z: D * 0.9, x: 0.22 },
+    leftUpperArm: { z: -D * 0.9, x: -0.22 },
+    rightLowerArm: { x: -0.5 },
+    leftLowerArm: { x: -0.5 },
+  },
   facepalm: {
     rightUpperArm: { z: D * 1.15, x: -0.55, y: -0.35 },
     rightLowerArm: { x: -1.45, y: 1.55 },
     rightHand: { x: -0.35 },
     chest: { x: 0.10 },
     spine: { x: 0.06 },
+  },
+  stretch: {
+    rightUpperArm: { z: D * 1.9 },
+    leftUpperArm: { z: -D * 1.9 },
+    spine: { x: -0.08 },
   },
 };
 
@@ -108,22 +147,20 @@ const GESTURES = {
   wave(p) {                                     // raise right arm out, wave the forearm
     const up = clamp(p / 0.18), down = 1 - clamp((p - 0.78) / 0.22), amp = up * down;
     const osc = Math.sin(p * Math.PI * 6);
+    const wave = poseFor('wave');
     return {
-      rightUpperArm: { z: amp * D * 1.3 },
-      rightLowerArm: { x: amp * osc * 0.5 },
-      rightHand: { z: amp * osc * 0.3 },
+      rightUpperArm: { z: (wave.rightUpperArm?.z || 0) * amp },
+      rightLowerArm: { x: (wave.rightLowerArm?.x || 0) * amp * osc },
+      rightHand: { z: (wave.rightHand?.z || 0) * amp * osc },
     };
   },
   recoil(p) {                                   // quick surprised lean back (no arm swing)
     const a = (1 - p) * (1 - p) * clamp(p / 0.08);
-    return { spine: { x: -a * 0.14 }, chest: { x: -a * 0.06 } };
+    return scalePose(poseFor('recoil'), a);
   },
   cheer(p) {                                    // both arms up briefly
     const a = Math.sin(p * Math.PI);
-    return {
-      rightUpperArm: { z: a * D * 1.8 },
-      leftUpperArm: { z: -a * D * 1.8 },
-    };
+    return scalePose(poseFor('cheer'), a);
   },
   think(p) {                                    // bring right forearm up toward chin
     const a = Math.sin(clamp(p) * Math.PI);
@@ -131,11 +168,11 @@ const GESTURES = {
   },
   nod(p) {                                      // gentle torso bob
     const a = Math.sin(p * Math.PI) * Math.sin(p * Math.PI * 3);
-    return { spine: { x: a * 0.05 } };
+    return scalePose(poseFor('nod'), a);
   },
   bow(p) {                                      // polite forward bow from the waist
     const a = Math.sin(clamp(p) * Math.PI);
-    return { spine: { x: a * 0.4 }, chest: { x: a * 0.18 }, hips: { x: a * 0.05 } };
+    return scalePose(poseFor('bow'), a);
   },
   shrug(p) {                                    // both shoulders up, palms turned out
     const a = Math.sin(clamp(p) * Math.PI);
@@ -161,20 +198,21 @@ const GESTURES = {
   },
   peace(p) {                                    // right hand up by the head (✌ pose)
     const up = clamp(p / 0.2), down = 1 - clamp((p - 0.7) / 0.3), a = up * down;
-    return { rightUpperArm: { z: a * D * 1.5 }, rightLowerArm: { x: -a * 1.4 } };
+    return scalePose(poseFor('peace'), a);
   },
   dance(p) {                                    // sway hips + alternate arms
     const s = Math.sin(p * Math.PI * 6);
     const c = Math.cos(p * Math.PI * 6);
     const env = Math.sin(p * Math.PI);
+    const dance = poseFor('dance');
     return {
-      hips: { y: s * 0.16 * env, z: s * 0.10 * env },
-      spine: { y: -s * 0.10 * env },
-      chest: { y: c * 0.08 * env },
-      rightUpperArm: { z: env * D * 0.9 + s * 0.45, x: c * 0.22 },
-      leftUpperArm: { z: -env * D * 0.9 - s * 0.45, x: -c * 0.22 },
-      rightLowerArm: { x: -0.5 * Math.abs(s) },
-      leftLowerArm: { x: -0.5 * Math.abs(c) },
+      hips: { y: (dance.hips?.y || 0) * s * env, z: (dance.hips?.z || 0) * s * env },
+      spine: { y: (dance.spine?.y || 0) * s * env },
+      chest: { y: (dance.chest?.y || 0) * c * env },
+      rightUpperArm: { z: (dance.rightUpperArm?.z || 0) * env + s * 0.45, x: (dance.rightUpperArm?.x || 0) * c },
+      leftUpperArm: { z: (dance.leftUpperArm?.z || 0) * env - s * 0.45, x: (dance.leftUpperArm?.x || 0) * c },
+      rightLowerArm: { x: (dance.rightLowerArm?.x || 0) * Math.abs(s) },
+      leftLowerArm: { x: (dance.leftLowerArm?.x || 0) * Math.abs(c) },
     };
   },
   facepalm(p) {                                 // right hand up to the face, small slump
@@ -183,11 +221,7 @@ const GESTURES = {
   },
   stretch(p) {                                  // both arms overhead, lean back
     const a = Math.sin(clamp(p) * Math.PI);
-    return {
-      rightUpperArm: { z: a * D * 1.9 },
-      leftUpperArm: { z: -a * D * 1.9 },
-      spine: { x: -a * 0.08 },
-    };
+    return scalePose(poseFor('stretch'), a);
   },
 };
 const GESTURE_DUR = {

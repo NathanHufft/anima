@@ -178,7 +178,7 @@ function renderPoseSliders() {
                 range.value = value;
                 num.value = Number(value).toFixed(2);
                 updatePoseJson();
-                sendPosePreview(false);
+                sendPosePreview(true);
             };
             range.addEventListener('input', () => apply(range.value));
             num.addEventListener('change', () => apply(num.value));
