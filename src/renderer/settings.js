@@ -239,6 +239,10 @@ $('#btn-test-voice').addEventListener('click', () =>
     window.anima.sendCommand({ type: 'testVoice', opts: currentVoiceOpts() }));
 
 $('#btn-load-vrm').addEventListener('click', () => $('#vrm-file').click());
+$('#btn-rerun-wizard').addEventListener('click', () => {
+    window.anima.sendCommand({ type: 'showWizard' });
+    window.anima.closeSettings();
+});
 $('#vrm-file').addEventListener('change', async (e) => {
     const file = e.target.files[0]; if (!file) return;
     $('#vrm-name').textContent = 'loading…';

@@ -339,6 +339,9 @@ window.anima.onCommand(async (cmd) => {
       try { await idbPut('vrm', cmd.buffer); await idbPut('vrmName', cmd.name); } catch { }
       await loadVRMBuffer(cmd.buffer, cmd.name);
       break;
+    case 'showWizard':
+      showWizard();
+      break;
   }
 });
 
@@ -351,6 +354,176 @@ window.anima.onTimer(({ label } = {}) => {
   avatar.playGesture('wave');
   sayOut(label ? `Time's up — ${label}!` : `Time's up!`, 'surprised');
 });
+
+// ----------------------------------------------------------------- First-Run Wizard
+let wizardState = { step: 1, provider: null, key: '', name: 'Cici', vrmLoaded: false };
+
+function showWizard() {
+  const w = $('#wizard');
+  w.classList.remove('hidden');
+  goToStep(1);
+}
+
+function hideWizard() {
+  $('#wizard').classList.add('hidden');
+}
+
+function goToStep(n) {
+  wizardState.step = n;
+  document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('hidden'));
+  document.getElementById(`wizard-step-${n}`).classList.remove('hidden');
+
+  // progress dots
+  document.querySelectorAll('.step-dot').forEach(dot => {
+    dot.classList.toggle('active', Number(dot.dataset.step) <= n);
+  });
+}
+
+function selectBrainCard(provider) {
+  document.querySelectorAll('.brain-card').forEach(c => c.classList.remove('selected'));
+  const card = document.querySelector(`.brain-card[data-provider="${provider}"]`);
+  if (card) card.classList.add('selected');
+  wizardState.provider = provider;
+
+  const keyRow = $('#wizard-key-row');
+  const keyInput = $('#wizard-key');
+  const keyLabel = $('#wizard-key-label');
+
+  if (provider === 'ollama') {
+    keyRow.classList.add('hidden');
+    wizardState.key = '';
+  } else {
+    keyRow.classList.remove('hidden');
+    if (provider === 'anthropic') keyLabel.textContent = 'Anthropic API Key';
+    else if (provider === 'openai') keyLabel.textContent = 'OpenAI API Key';
+    else if (provider === 'grok') keyLabel.textContent = 'xAI (Grok) API Key';
+    keyInput.value = wizardState.key || '';
+  }
+}
+
+// Wire wizard controls (called once on boot)
+function initWizard() {
+  // Step 1
+  $('#wizard-next-1').addEventListener('click', () => {
+    wizardState.name = $('#wizard-name').value.trim() || 'Cici';
+    goToStep(2);
+  });
+
+  // Step 2 - brain selection
+  document.querySelectorAll('.brain-card').forEach(card => {
+    card.addEventListener('click', () => {
+      selectBrainCard(card.dataset.provider);
+    });
+  });
+
+  $('#wizard-back-2').addEventListener('click', () => goToStep(1));
+  $('#wizard-skip-brain').addEventListener('click', () => {
+    wizardState.provider = null;
+    wizardState.key = '';
+    goToStep(3);
+  });
+
+  $('#wizard-next-2').addEventListener('click', () => {
+    const keyInput = $('#wizard-key');
+    if (wizardState.provider && wizardState.provider !== 'ollama') {
+      wizardState.key = keyInput.value.trim();
+      if (!wizardState.key) {
+        keyInput.style.borderColor = 'var(--rose)';
+        setTimeout(() => keyInput.style.borderColor = '', 1200);
+        return;
+      }
+    }
+    goToStep(3);
+  });
+
+  // Step 3 - avatar
+  $('#wizard-back-3').addEventListener('click', () => goToStep(2));
+
+  $('#wizard-load-vrm').addEventListener('click', () => {
+    // Reuse the hidden file input from settings or create a temp one
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.vrm';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      $('#wizard-vrm-status').textContent = 'Loading ' + file.name + '…';
+      try {
+        const buffer = await file.arrayBuffer();
+        await idbPut('vrm', buffer);
+        await idbPut('vrmName', file.name);
+        await loadVRMBuffer(buffer, file.name);
+        wizardState.vrmLoaded = true;
+        $('#wizard-vrm-status').innerHTML = `✓ Loaded <strong>${file.name}</strong>`;
+      } catch (err) {
+        $('#wizard-vrm-status').textContent = 'Failed to load: ' + err.message;
+      }
+    };
+    input.click();
+  });
+
+  $('#wizard-download-starter').addEventListener('click', async () => {
+    const status = $('#wizard-vrm-status');
+    status.textContent = 'Downloading starter avatar…';
+    try {
+      // Small public VRM sample (VRM 1.0 compatible)
+      const url = 'https://raw.githubusercontent.com/pixiv/three-vrm/develop/examples/models/VRM1_0/VRM1_0_Sample.vrm';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Download failed: ' + res.status);
+      const buffer = await res.arrayBuffer();
+      await idbPut('vrm', buffer);
+      await idbPut('vrmName', 'Starter Avatar.vrm');
+      await loadVRMBuffer(buffer, 'Starter Avatar.vrm');
+      wizardState.vrmLoaded = true;
+      status.innerHTML = '✓ Starter avatar loaded! You can replace it anytime in Settings.';
+    } catch (err) {
+      status.textContent = 'Download failed. You can still load a .vrm manually.';
+      console.error('Starter VRM download error:', err);
+      // Fallback: open VRoid as alternative
+      setTimeout(() => {
+        window.open('https://vroid.com/en/studio', '_blank');
+      }, 1200);
+    }
+  });
+
+  $('#wizard-finish').addEventListener('click', async () => {
+    // Save minimal config
+    const cfg = (await window.anima.getConfig()) || {};
+    cfg.name = wizardState.name;
+    if (wizardState.provider) {
+      cfg.provider = wizardState.provider;
+      if (wizardState.provider === 'anthropic') cfg.anthropicKey = wizardState.key;
+      else if (wizardState.provider === 'openai') cfg.openaiKey = wizardState.key;
+      else if (wizardState.provider === 'grok') cfg.grokKey = wizardState.key;
+      else if (wizardState.provider === 'ollama') cfg.ollamaUrl = 'http://localhost:11434';
+    }
+    await window.anima.setConfig(cfg);
+    await applyConfig();
+
+    hideWizard();
+
+    // Friendly first greeting
+    setTimeout(() => {
+      avatar.setExpression('happy');
+      avatar.playGesture('wave');
+      const msg = wizardState.vrmLoaded
+        ? `Nice to meet you, ${wizardState.name}! I love my new look.`
+        : `Hi! I'm ${wizardState.name}. Open ⚙ anytime to give me a brain or a body.`;
+      showBubble(msg, true);
+      setTimeout(() => avatar.setExpression('neutral'), 3000);
+      setTimeout(() => $('#bubble').classList.add('hidden'), 8000);
+    }, 400);
+  });
+}
+
+// First-run detection: no provider key and no VRM
+async function isFirstRun() {
+  const cfg = (await window.anima.getConfig()) || {};
+  const hasKey = !!(cfg.anthropicKey || cfg.openaiKey || cfg.grokKey || cfg.azureApiKey);
+  const hasOllama = cfg.provider === 'ollama';
+  const hasVRM = !!(await idbGet('vrm').catch(() => null));
+  return !hasKey && !hasOllama && !hasVRM;
+}
 
 window.anima.onGhostChanged((on) => {
   state.cfg.ghost = on;
@@ -366,18 +539,27 @@ window.anima.onGhostChanged((on) => {
 // ----------------------------------------------------------------- boot
 (async () => {
   await applyConfig();
+  initWizard();
+
   // restore her body if we saved one
   try {
     const buf = await idbGet('vrm');
     if (buf) await loadVRMBuffer(buf, await idbGet('vrmName'));
   } catch { }
+
   window.anima.setGhost(!!state.cfg.ghost);
   setStatus('idle');
-  // a small hello so it's obviously alive on first run
-  setTimeout(() => {
-    avatar.setExpression('happy'); avatar.playGesture('wave');
-    showBubble(`Hi! I'm ${state.cfg.name || 'Cici'}. Open ⚙ to give me a brain and a voice.`, true);
-    setTimeout(() => avatar.setExpression('neutral'), 2800);
-    setTimeout(() => $('#bubble').classList.add('hidden'), 7000);
-  }, 600);
+
+  // First-run wizard or friendly hello
+  if (await isFirstRun()) {
+    setTimeout(() => showWizard(), 350);
+  } else {
+    // a small hello so it's obviously alive on first run
+    setTimeout(() => {
+      avatar.setExpression('happy'); avatar.playGesture('wave');
+      showBubble(`Hi! I'm ${state.cfg.name || 'Cici'}. Open ⚙ to give me a brain and a voice.`, true);
+      setTimeout(() => avatar.setExpression('neutral'), 2800);
+      setTimeout(() => $('#bubble').classList.add('hidden'), 7000);
+    }, 600);
+  }
 })();

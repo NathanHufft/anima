@@ -631,6 +631,7 @@ button {
   background: rgba(6, 4, 14, 0.5);
   backdrop-filter: blur(4px);
 }
+
 #confirm-card {
   width: 300px;
   max-width: 88%;
@@ -640,17 +641,20 @@ button {
   box-shadow: var(--shadow);
   padding: 16px;
 }
+
 #confirm-title {
   font-family: 'Zen Maru Gothic', sans-serif;
   color: var(--bloom);
   font-size: 15px;
   margin-bottom: 6px;
 }
+
 #confirm-body {
   font-size: 13px;
   color: var(--ink);
   word-break: break-word;
 }
+
 #confirm-detail {
   margin: 8px 0 0;
   max-height: 160px;
@@ -665,20 +669,195 @@ button {
   user-select: text;
   -webkit-user-select: text;
 }
+
 #confirm-actions {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
   margin-top: 14px;
 }
+
 #confirm-actions .ghost-btn,
 #confirm-actions .save-btn {
   flex: 0 0 auto;
   padding: 9px 16px;
 }
+
 .save-btn.danger {
   background: linear-gradient(135deg, var(--rose), #d65f7a);
   color: #fff;
+}
+
+/* ===================== FIRST-RUN WIZARD ===================== */
+#wizard {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 4, 14, 0.65);
+  backdrop-filter: blur(8px);
+}
+
+#wizard-card {
+  width: 420px;
+  max-width: 92%;
+  background: rgba(17, 14, 30, 0.98);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  padding: 28px 26px 24px;
+  color: var(--ink);
+}
+
+#wizard-progress {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: all 0.2s ease;
+}
+
+.step-dot.active {
+  background: var(--bloom);
+  box-shadow: 0 0 0 3px rgba(185, 160, 255, 0.3);
+}
+
+.wizard-step h1 {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 26px;
+  margin: 0 0 8px;
+  color: var(--bloom);
+  text-align: center;
+}
+
+.wizard-step h2 {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 20px;
+  margin: 0 0 6px;
+  color: var(--bloom);
+  text-align: center;
+}
+
+.wizard-sub {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 20px;
+  line-height: 1.4;
+}
+
+.wizard-hero {
+  font-size: 56px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.brain-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.brain-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.brain-card:hover {
+  border-color: var(--bloom);
+  background: rgba(185, 160, 255, 0.08);
+}
+
+.brain-card.selected {
+  border-color: var(--bloom);
+  background: rgba(185, 160, 255, 0.15);
+  box-shadow: 0 0 0 1px var(--bloom);
+}
+
+.brain-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--bloom), #a78bfa);
+  color: #0d0b1a;
+  font-weight: 600;
+}
+
+.brain-icon {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+.brain-name {
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+
+.brain-desc {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+#wizard-key-row {
+  margin: 12px 0 8px;
+}
+
+.avatar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+#wizard-vrm-status {
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.wizard-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.wizard-actions .save-btn,
+.wizard-actions .ghost-btn {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+
+.wizard-hint {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 14px;
+}
+
+.wizard-hint a {
+  color: var(--bloom);
+  text-decoration: none;
 }
 
 .hidden {

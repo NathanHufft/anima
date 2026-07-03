@@ -98,6 +98,98 @@
     </div>
   </div>
 
+  <!-- ===================== FIRST-RUN WIZARD ===================== -->
+  <div id="wizard" class="interactive hidden">
+    <div id="wizard-card">
+      <!-- Progress -->
+      <div id="wizard-progress">
+        <div class="step-dot active" data-step="1"></div>
+        <div class="step-dot" data-step="2"></div>
+        <div class="step-dot" data-step="3"></div>
+      </div>
+
+      <!-- STEP 1: Welcome -->
+      <div id="wizard-step-1" class="wizard-step">
+        <div class="wizard-hero">🌸</div>
+        <h1>Welcome to Anima</h1>
+        <p class="wizard-sub">Your expressive 3D anime companion lives right here on your desktop.</p>
+
+        <label class="field">
+          <span>What should I call you?</span>
+          <input id="wizard-name" type="text" placeholder="Cici" value="Cici" />
+        </label>
+
+        <div class="wizard-actions">
+          <button id="wizard-next-1" class="save-btn">Let's go →</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Brain -->
+      <div id="wizard-step-2" class="wizard-step hidden">
+        <h2>Choose her brain</h2>
+        <p class="wizard-sub">She can think with any LLM. Pick one to start — you can change anytime.</p>
+
+        <div class="brain-grid">
+          <button class="brain-card" data-provider="ollama">
+            <div class="brain-badge">Recommended</div>
+            <div class="brain-icon">🦙</div>
+            <div class="brain-name">Ollama (Local)</div>
+            <div class="brain-desc">Private &amp; free. Runs on your machine.</div>
+          </button>
+          <button class="brain-card" data-provider="anthropic">
+            <div class="brain-icon">🧠</div>
+            <div class="brain-name">Claude</div>
+            <div class="brain-desc">Anthropic • Excellent reasoning</div>
+          </button>
+          <button class="brain-card" data-provider="openai">
+            <div class="brain-icon">🤖</div>
+            <div class="brain-name">GPT-4o</div>
+            <div class="brain-desc">OpenAI • Fast &amp; capable</div>
+          </button>
+          <button class="brain-card" data-provider="grok">
+            <div class="brain-icon">✨</div>
+            <div class="brain-name">Grok</div>
+            <div class="brain-desc">xAI • Witty &amp; real-time</div>
+          </button>
+        </div>
+
+        <div id="wizard-key-row" class="hidden">
+          <label class="field">
+            <span id="wizard-key-label">API Key</span>
+            <input id="wizard-key" type="password" placeholder="sk-..." />
+          </label>
+        </div>
+
+        <div class="wizard-actions">
+          <button id="wizard-back-2" class="ghost-btn">← Back</button>
+          <button id="wizard-next-2" class="save-btn">Continue →</button>
+          <button id="wizard-skip-brain" class="ghost-btn">Skip for now</button>
+        </div>
+        <p class="wizard-hint">Ollama users: make sure Ollama is running at <code>http://localhost:11434</code></p>
+      </div>
+
+      <!-- STEP 3: Avatar -->
+      <div id="wizard-step-3" class="wizard-step hidden">
+        <h2>Give her a body</h2>
+        <p class="wizard-sub">Load a .vrm model or keep the cute fallback face for now.</p>
+
+        <div class="avatar-actions">
+          <button id="wizard-load-vrm" class="ghost-btn">📁 Load .vrm model…</button>
+          <button id="wizard-download-starter" class="ghost-btn">⬇️ Download starter avatar</button>
+        </div>
+
+        <div id="wizard-vrm-status" class="muted">No custom avatar yet — using the built-in face.</div>
+
+        <div class="wizard-actions">
+          <button id="wizard-back-3" class="ghost-btn">← Back</button>
+          <button id="wizard-finish" class="save-btn">All set — meet Anima! ✨</button>
+        </div>
+        <p class="wizard-hint">Tip: Create free avatars in <a href="https://vroid.com/en/studio" target="_blank">VRoid
+            Studio</a> and export as .vrm</p>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="app.js"></script>
 </body>
 
