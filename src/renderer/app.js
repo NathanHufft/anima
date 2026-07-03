@@ -30,6 +30,10 @@ const runTool = makeRunTool({
   onAppearance: (zone, color) => {
     state.cfg.appearance = zone === null ? {} : { ...(state.cfg.appearance || {}), [zone]: color };
     window.anima.setConfig(state.cfg);
+  },
+  onOutfit: (which) => {
+    state.cfg.outfit = which;
+    window.anima.setConfig(state.cfg);
   }
 });
 const listener = new Listener();
@@ -102,7 +106,7 @@ async function send() {
       list_files: 'looking through files…', read_file: 'reading a file…',
       write_file: 'writing a file…', trash_file: 'tidying up…',
       open_path: 'opening that…', run_command: 'running a command…', set_timer: 'setting a timer…',
-      set_appearance: 'changing my look…', reset_appearance: 'back to my usual look…'
+      set_appearance: 'changing my look…', reset_appearance: 'back to my usual look…', set_outfit: 'getting changed…'
     }[name];
     if (['search_web', 'fetch_page', 'list_files', 'read_file', 'write_file', 'run_command'].includes(name)) avatar.playGesture('think');
     if (label) toolStatus(label);
@@ -268,6 +272,7 @@ async function loadVRMBuffer(buffer, name) {
     setStatus('thinking');
     await avatar.loadVRM(buffer);
     avatar.applyAppearanceMap(state.cfg.appearance);  // re-apply saved recolors
+    if (state.cfg.outfit) avatar.setOutfit(state.cfg.outfit);
     setStatus('idle');
   } catch (e) {
     console.error(e);
@@ -344,6 +349,18 @@ window.anima.onCommand(async (cmd) => {
     case 'gesture': avatar.playGesture(cmd.value); break;
     case 'poseOverride': avatar.setPoseOverride(cmd.name, cmd.pose); break;
     case 'posePreview': avatar.setPoseOverride(cmd.name, cmd.pose); avatar.playGesture(cmd.name); break;
+    case 'appearance':
+      avatar.setAppearance(cmd.zone, cmd.color);
+      state.cfg.appearance = { ...(state.cfg.appearance || {}), [cmd.zone]: cmd.color };
+      break;
+    case 'appearanceReset':
+      avatar.resetAppearance();
+      state.cfg.appearance = {};
+      break;
+    case 'outfit':
+      avatar.setOutfit(cmd.value);
+      state.cfg.outfit = cmd.value;
+      break;
     case 'testVoice': testVoice(cmd.opts || {}); break;
     case 'loadVRM':
       try { await idbPut('vrm', cmd.buffer); await idbPut('vrmName', cmd.name); } catch { }

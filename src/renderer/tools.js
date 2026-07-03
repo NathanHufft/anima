@@ -45,6 +45,11 @@ const SELF_TOOLS = [
     description: "Undo all your appearance recolors, back to your model's original colors.",
     parameters: { type: 'object', properties: {}, required: [] }
   },
+  {
+    name: 'set_outfit',
+    description: "Switch which outfit you're wearing, if your model bundles more than one. outfit is 'dress', 'top', or 'both'.",
+    parameters: { type: 'object', properties: { outfit: { type: 'string', enum: ['dress', 'top', 'both'] } }, required: ['outfit'] }
+  },
 ];
 
 const MEMORY_TOOLS = [
@@ -199,6 +204,12 @@ export function makeRunTool(ctx) {
         avatar.resetAppearance();
         ctx.onAppearance?.(null);
         return 'Reset my colors to default.';
+      case 'set_outfit': {
+        const which = String(args.outfit || 'both').toLowerCase();
+        avatar.setOutfit(which);
+        ctx.onOutfit?.(which);
+        return `Switched to my ${which} outfit.`;
+      }
 
       // Tier 2 — memory
       case 'remember': {

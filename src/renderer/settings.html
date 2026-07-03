@@ -131,6 +131,27 @@
             <p class="hint">No model yet? Make one free in <a href="https://vroid.com/en/studio" target="_blank">VRoid
                     Studio</a> and export as <b>.vrm</b>, then load it here.</p>
 
+            <div class="divider"><span>Appearance</span></div>
+            <div id="appearance-grid" class="appearance-grid">
+                <label class="color-row"><span>Hair</span><input type="color" data-zone="hair" value="#c9b7e8" /></label>
+                <label class="color-row"><span>Skin</span><input type="color" data-zone="skin" value="#f0d9cf" /></label>
+                <label class="color-row"><span>Eyes</span><input type="color" data-zone="eyes" value="#5a7fd0" /></label>
+                <label class="color-row"><span>Lips</span><input type="color" data-zone="lips" value="#e58a8a" /></label>
+                <label class="color-row"><span>Dress</span><input type="color" data-zone="dress" value="#b0a89a" /></label>
+                <label class="color-row"><span>Top</span><input type="color" data-zone="top" value="#3a3f5a" /></label>
+                <label class="color-row"><span>Shoes</span><input type="color" data-zone="shoes" value="#5a5a5a" /></label>
+            </div>
+            <div id="outfit-row" class="outfit-row">
+                <span class="muted">Outfit:</span>
+                <button data-outfit="dress">Dress</button>
+                <button data-outfit="top">Top</button>
+                <button data-outfit="both">Both</button>
+            </div>
+            <button id="btn-reset-appearance" class="ghost-btn">Reset colors</button>
+            <p class="hint">Recolors apply live and save with your settings. Hair, skin, eyes and the dress recolor
+                cleanly; the top's texture is darker, so bold colors there can look muted. Outfit swap shows/hides the
+                dress vs. the top — how it looks depends on how the model was built.</p>
+
             <div class="divider"><span>Behaviour</span></div>
             <label class="check"><input id="cfg-ghost" type="checkbox" /> <span>Ghost mode — float on desktop, click
                     through</span></label>

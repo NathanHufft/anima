@@ -13,6 +13,8 @@ import { POSES } from './poses.js';
 const $ = (s) => document.querySelector(s);
 let cfg = {};
 let poseOverrides = {};
+let appearance = {};
+let outfit = null;
 
 const POSE_BONES = ['hips', 'spine', 'chest', 'leftUpperArm', 'rightUpperArm',
     'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand'];
@@ -56,10 +58,13 @@ async function loadConfig() {
     $('#cfg-stt-engine').value = c.sttEngine || 'auto';
     $('#cfg-handsfree').checked = !!c.handsFree;
     poseOverrides = clone(c.poseOverrides || {});
+    appearance = clone(c.appearance || {});
+    outfit = c.outfit || null;
     if (c.vrmName) $('#vrm-name').textContent = c.vrmName;
     reflectVoiceEngine();
     populateVoices();
     initPoseLab();
+    initAppearance();
 }
 
 // ----------------------------------------------------------------- save
@@ -97,6 +102,8 @@ async function saveConfig() {
     c.sttEngine = $('#cfg-stt-engine').value;
     c.handsFree = $('#cfg-handsfree').checked;
     c.poseOverrides = clone(poseOverrides);
+    c.appearance = clone(appearance);
+    c.outfit = outfit;
     await window.anima.setConfig(c);
     window.anima.setGhost(c.ghost);
     window.anima.broadcastConfig(); // tell the companion to re-apply live
@@ -208,6 +215,34 @@ function initPoseLab() {
     }
     sel.value = sel.value || 'clap';
     renderPoseSliders();
+}
+
+// ----------------------------------------------------------------- Appearance
+// Color pickers + outfit swap. Sends live commands to the companion window and
+// keeps `appearance`/`outfit` in sync so Save persists them.
+function initAppearance() {
+    document.querySelectorAll('#appearance-grid input[type="color"]').forEach((inp) => {
+        const zone = inp.dataset.zone;
+        if (appearance[zone]) inp.value = appearance[zone];
+        inp.addEventListener('input', () => {
+            appearance[zone] = inp.value;
+            window.anima.sendCommand({ type: 'appearance', zone, color: inp.value });
+        });
+    });
+    const markOutfit = (which) => document.querySelectorAll('#outfit-row button[data-outfit]')
+        .forEach((b) => b.classList.toggle('on', b.dataset.outfit === which));
+    document.querySelectorAll('#outfit-row button[data-outfit]').forEach((b) => {
+        b.addEventListener('click', () => {
+            outfit = b.dataset.outfit;
+            markOutfit(outfit);
+            window.anima.sendCommand({ type: 'outfit', value: outfit });
+        });
+    });
+    if (outfit) markOutfit(outfit);
+    $('#btn-reset-appearance').addEventListener('click', () => {
+        appearance = {};
+        window.anima.sendCommand({ type: 'appearanceReset' });
+    });
 }
 
 // ----------------------------------------------------------------- wiring

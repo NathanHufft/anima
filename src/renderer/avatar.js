@@ -221,6 +221,25 @@ export class Avatar {
     for (const [zone, hex] of Object.entries(map)) this.setAppearance(zone, hex);
   }
 
+  // outfit swap: show/hide whole cloth groups by material name -------------
+  _eachClothMesh(fn) {
+    if (!this.vrm) return;
+    this.vrm.scene.traverse((o) => {
+      if (!o.isMesh || !o.material) return;
+      const name = Array.isArray(o.material)
+        ? o.material.map((m) => m?.name || '').join(' ')
+        : (o.material.name || '');
+      fn(o, name);
+    });
+  }
+  // which: 'dress' | 'top' | 'both' — toggles the VRoid Onepiece vs Tops meshes
+  setOutfit(which) {
+    this._eachClothMesh((o, name) => {
+      if (/Onepiece/i.test(name)) o.visible = which !== 'top';
+      else if (/Tops/i.test(name)) o.visible = which !== 'dress';
+    });
+  }
+
   start() {
     const loop = () => {
       const dt = this.clock.getDelta();
