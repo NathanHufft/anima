@@ -1,10 +1,31 @@
-# Anima — your floating 3D anime desktop companion
+# Anima
+
+<p align="center">
+  <img src="https://img.shields.io/github/stars/NathanHufft/anima?style=social" alt="GitHub stars">
+  <img src="https://img.shields.io/github/license/NathanHufft/anima" alt="License">
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue" alt="Platforms">
+  <img src="https://img.shields.io/badge/Electron-42-blue" alt="Electron">
+</p>
+
+<p align="center">
+  <strong>A floating 3D anime desktop companion powered by any LLM.</strong><br>
+  Expressive VRM avatar • Mood-driven expressions & gestures • Lip-sync voice • Opt-in agent tools
+</p>
+
+<p align="center">
+  <a href="https://github.com/NathanHufft/anima">GitHub</a> •
+  <a href="#-features">Features</a> •
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-screenshots">Screenshots</a>
+</p>
+
+---
 
 A frameless, transparent, always-on-top desktop companion. She renders a real
 3D anime (VTuber-style) avatar, blinks and breathes, follows your cursor,
 lip-syncs while she talks, and thinks with **any** LLM you plug in:
-**Claude, GPT, Grok, or a local Ollama model.** Voice is built-in (offline)
-with **ElevenLabs** ready to swap in.
+**Claude, GPT, Grok, Ollama, or Azure AI Foundry.** Voice is built-in (offline)
+with **ElevenLabs** and **Azure Speech** ready to swap in.
 
 > **About the avatar:** the polished anime look in your reference (Keeki's
 > Coloso course) is a hand-built Blender → Substance → Unity model. That kind of
@@ -12,6 +33,37 @@ with **ElevenLabs** ready to swap in.
 > Anima is the *engine* that loads any `.vrm` and brings it fully to life.
 > You supply the body; Anima supplies the brain, voice, animation, and the
 > floating desktop window.
+
+---
+
+## ✨ Features
+
+- **Living 3D Avatar** — Load any `.vrm` (VRoid, VRChat, custom). Real-time expressions, gestures, breathing, cursor following, and spring-bone physics.
+- **Any Brain** — Claude, GPT-4o, Grok, Ollama (local), or Azure AI Foundry. Switch anytime.
+- **Natural Voice** — Offline system TTS, ElevenLabs, or Azure Speech with accurate lip-sync.
+- **Agent Tools (opt-in)** — Let her read/write files in a sandbox, open apps, run commands, set timers — always with your approval.
+- **Ghost Mode** — Click-through floating window that lives on your desktop.
+- **First-Run Wizard** — Beautiful 3-step onboarding to get you up and running in under a minute.
+- **Privacy First** — API keys encrypted at rest. Full local mode with Ollama.
+
+---
+
+## 📸 Screenshots
+
+<p align="center">
+  <img src="https://via.placeholder.com/800x450/0d0b1a/b9a0ff?text=Anima+Floating+on+Desktop" alt="Anima floating on desktop" width="800">
+  <br><em>Anima floating over your desktop in Ghost Mode</em>
+</p>
+
+<p align="center">
+  <img src="https://via.placeholder.com/800x450/0d0b1a/b9a0ff?text=First-Run+Wizard" alt="First-Run Wizard" width="800">
+  <br><em>Beautiful 3-step First-Run Wizard</em>
+</p>
+
+<p align="center">
+  <img src="https://via.placeholder.com/800x450/0d0b1a/b9a0ff?text=Settings+Window" alt="Settings" width="800">
+  <br><em>Detached Settings window with live expression & gesture testing</em>
+</p>
 
 ---
 
