@@ -283,11 +283,14 @@ async function loadVRMBuffer(buffer, name) {
 // ----------------------------------------------------------------- ghost mode mouse routing
 let lastIgnore = null;
 window.addEventListener('mousemove', (e) => {
-  // cursor → normalised (-1..1) for eye/head follow
-  const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
-  avatar.pointer((e.clientX - cx) / cx, -(e.clientY - cy) / cy);
+  // cursor → normalised (-1..1) for eye/head follow (paused while spinning her)
+  if (!avatar.orbiting) {
+    const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+    avatar.pointer((e.clientX - cx) / cx, -(e.clientY - cy) / cy);
+  }
 
   if (!state.cfg.ghost) return;
+  if (avatar.orbiting) return; // keep the window interactive mid drag-to-spin
   const el = document.elementFromPoint(e.clientX, e.clientY);
   const onPanel = !!(el && (el.closest('.interactive') || el.id === 'dragbar'));
   const interactive = onPanel || avatar.hitTest(e.clientX, e.clientY);

@@ -52,6 +52,8 @@ export class Avatar {
     this.viewDist = 1.7;   // camera distance (scroll on her to zoom live)
     this.viewY = -0.22;    // camera height offset from head
     this.lookY = -0.28;    // look-at height offset from head
+    this.viewYaw = 0;      // orbit angle around her (drag to spin)
+    this.viewPitch = 0;    // orbit elevation (drag up/down)
     this._headY = 1.3;
     this.fallback = new FallbackAvatar(fallbackEl);
     this.gestures = new Gesturizer();
@@ -73,6 +75,38 @@ export class Avatar {
       this.viewDist = Math.min(4, Math.max(0.6, this.viewDist + e.deltaY * 0.0015));
       this.reframe();
     }, { passive: false });
+
+    // drag on the avatar to orbit/spin the view; double-click to recenter.
+    // `orbiting` is read by the ghost-mode router so a spin doesn't get cut off.
+    this.canvas.style.cursor = 'grab';
+    let dragging = false, lastX = 0, lastY = 0;
+    this.orbiting = false;
+    this.canvas.addEventListener('pointerdown', (e) => {
+      dragging = true; this.orbiting = true;
+      lastX = e.clientX; lastY = e.clientY;
+      this.canvas.style.cursor = 'grabbing';
+      try { this.canvas.setPointerCapture(e.pointerId); } catch { }
+    });
+    this.canvas.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX, dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      this.viewYaw -= dx * 0.01;
+      this.viewPitch = Math.max(-0.6, Math.min(0.6, this.viewPitch + dy * 0.008));
+      this.reframe();
+    });
+    const endDrag = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      this.canvas.style.cursor = 'grab';
+      try { this.canvas.releasePointerCapture(e.pointerId); } catch { }
+      setTimeout(() => { this.orbiting = false; }, 60); // let the click settle
+    };
+    this.canvas.addEventListener('pointerup', endDrag);
+    this.canvas.addEventListener('pointercancel', endDrag);
+    this.canvas.addEventListener('dblclick', () => {          // recenter the view
+      this.viewYaw = 0; this.viewPitch = 0; this.viewDist = 1.7; this.reframe();
+    });
 
     const key = new THREE.DirectionalLight(0xffffff, 2.0); key.position.set(1, 2, 2);
     const rim = new THREE.DirectionalLight(0x9ec0ff, 1.1); rim.position.set(-2, 1, -1.5);
@@ -155,9 +189,16 @@ export class Avatar {
 
   reframe() {
     const y = this._headY;
-    this.camera.position.set(0, y + this.viewY, this.viewDist);
+    const d = this.viewDist;
+    // orbit the camera around the vertical axis through (0, y, 0)
+    const horiz = Math.cos(this.viewPitch) * d;
+    const cx = Math.sin(this.viewYaw) * horiz;
+    const cz = Math.cos(this.viewYaw) * horiz;
+    const cy = y + this.viewY + Math.sin(this.viewPitch) * d;
+    this.camera.position.set(cx, cy, cz);
     this.camera.lookAt(0, y + this.lookY, 0);
-    this.lookTarget.position.set(0, y, 2);
+    // keep the eye-look target toward the camera so she can still meet your gaze
+    this.lookTarget.position.set(Math.sin(this.viewYaw) * 2, y, Math.cos(this.viewYaw) * 2);
   }
 
   setMouth(v) { this.mouth = Math.max(0, Math.min(1, v)); }
