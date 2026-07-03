@@ -915,3 +915,21 @@ button {
     animation: none;
   }
 }
+
+/* Pose Lab — collapsible bone groups */
+.pose-group {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  margin: 6px 0;
+  padding: 2px 8px;
+}
+.pose-group>summary {
+  cursor: pointer;
+  font-weight: 600;
+  opacity: 0.8;
+  padding: 6px 2px;
+  user-select: none;
+}
+.pose-group[open]>summary {
+  opacity: 1;
+}

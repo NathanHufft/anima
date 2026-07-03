@@ -331,15 +331,19 @@ export class Avatar {
     // This moves the body so VRM spring bones (hair/skirt) swing naturally.
     this.gestures.update(dt, { t, mouth: this.mouth });
 
-    // eyes/head follow cursor (applied after gestures so the head stays free)
+    // eyes/head follow cursor — applied as an ADDITIVE offset on top of the
+    // gesture system's head pose, so Pose Lab head values and cursor-follow
+    // stack instead of fighting. Eases back to 0 when follow is off.
+    this._followYaw = lerp(this._followYaw || 0, this.follow ? this.ptr.x * 0.28 : 0, 0.08);
+    this._followPitch = lerp(this._followPitch || 0, this.follow ? -this.ptr.y * 0.18 : 0, 0.08);
     if (this.follow) {
       this.lookTarget.position.x = lerp(this.lookTarget.position.x, this.ptr.x * 1.4, 0.1);
       this.lookTarget.position.y = lerp(this.lookTarget.position.y, 1.32 + this.ptr.y * 0.6, 0.1);
-      const head = this.vrm.humanoid?.getNormalizedBoneNode('head');
-      if (head) {
-        head.rotation.y = lerp(head.rotation.y, this.ptr.x * 0.28, 0.08);
-        head.rotation.x = lerp(head.rotation.x, -this.ptr.y * 0.18, 0.08);
-      }
+    }
+    const headBone = this.vrm.humanoid?.getNormalizedBoneNode('head');
+    if (headBone) {
+      headBone.rotation.y += this._followYaw;
+      headBone.rotation.x += this._followPitch;
     }
 
     this.vrm.update(dt);

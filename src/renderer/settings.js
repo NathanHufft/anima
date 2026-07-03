@@ -8,7 +8,7 @@
 
 import { defaultModel } from './llm.js';
 import { listBrowserVoices } from './voice.js';
-import { POSES } from './poses.js';
+import { POSES, BONE_GROUPS } from './poses.js';
 
 const $ = (s) => document.querySelector(s);
 let cfg = {};
@@ -16,8 +16,6 @@ let poseOverrides = {};
 let appearance = {};
 let outfit = null;
 
-const POSE_BONES = ['hips', 'spine', 'chest', 'leftUpperArm', 'rightUpperArm',
-    'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand'];
 const AXES = ['x', 'y', 'z'];
 const clone = (v) => JSON.parse(JSON.stringify(v || {}));
 
@@ -146,7 +144,9 @@ function currentVoiceOpts() {
 // ----------------------------------------------------------------- Pose Lab
 function poseBase(name) { return clone(POSES[name] || {}); }
 function currentPoseName() { return $('#pose-gesture').value || 'clap'; }
-function currentPose(name = currentPoseName()) { return clone(poseOverrides[name] || POSES[name] || {}); }
+function currentPose(name = currentPoseName()) {
+    return clone({ ...(POSES[name] || {}), ...(poseOverrides[name] || {}) });
+}
 
 function axisValue(pose, bone, axis) {
     return Number((pose[bone] && pose[bone][axis]) || 0);
@@ -175,31 +175,41 @@ function renderPoseSliders() {
     const pose = currentPose(name);
     const root = $('#pose-sliders');
     root.innerHTML = '';
-    for (const bone of POSE_BONES) {
-        const wrap = document.createElement('div');
-        wrap.className = 'pose-bone';
-        wrap.innerHTML = `<div class="pose-bone-title">${bone}</div>`;
-        for (const axis of AXES) {
-            const val = axisValue(pose, bone, axis);
-            const row = document.createElement('label');
-            row.className = 'pose-axis';
-            row.innerHTML = `<span>${axis}</span><input type="range" min="-2" max="2" step="0.01" value="${val}"><input type="number" min="-2" max="2" step="0.01" value="${val.toFixed(2)}">`;
-            const range = row.querySelector('input[type="range"]');
-            const num = row.querySelector('input[type="number"]');
-            const apply = (value) => {
-                const next = currentPose(name);
-                setAxisValue(next, bone, axis, value);
-                poseOverrides[name] = next;
-                range.value = value;
-                num.value = Number(value).toFixed(2);
-                updatePoseJson();
-                sendPosePreview(true);
-            };
-            range.addEventListener('input', () => apply(range.value));
-            num.addEventListener('change', () => apply(num.value));
-            wrap.appendChild(row);
+    for (const [group, bones] of Object.entries(BONE_GROUPS)) {
+        const det = document.createElement('details');
+        det.className = 'pose-group';
+        // open the groups this pose actually touches; arms open by default
+        det.open = group === 'Shoulders & arms' || bones.some(b => pose[b]);
+        const sum = document.createElement('summary');
+        sum.textContent = group;
+        det.appendChild(sum);
+        for (const bone of bones) {
+            const wrap = document.createElement('div');
+            wrap.className = 'pose-bone';
+            wrap.innerHTML = `<div class="pose-bone-title">${bone}</div>`;
+            for (const axis of AXES) {
+                const val = axisValue(pose, bone, axis);
+                const row = document.createElement('label');
+                row.className = 'pose-axis';
+                row.innerHTML = `<span>${axis}</span><input type="range" min="-2" max="2" step="0.01" value="${val}"><input type="number" min="-2" max="2" step="0.01" value="${val.toFixed(2)}">`;
+                const range = row.querySelector('input[type="range"]');
+                const num = row.querySelector('input[type="number"]');
+                const apply = (value) => {
+                    const next = currentPose(name);
+                    setAxisValue(next, bone, axis, value);
+                    poseOverrides[name] = next;
+                    range.value = value;
+                    num.value = Number(value).toFixed(2);
+                    updatePoseJson();
+                    sendPosePreview(true);
+                };
+                range.addEventListener('input', () => apply(range.value));
+                num.addEventListener('change', () => apply(num.value));
+                wrap.appendChild(row);
+            }
+            det.appendChild(wrap);
         }
-        root.appendChild(wrap);
+        root.appendChild(det);
     }
     updatePoseJson();
 }
@@ -259,6 +269,11 @@ $('#pose-reset').addEventListener('click', () => {
     renderPoseSliders();
     window.anima.sendCommand({ type: 'poseOverride', name, pose: poseBase(name) });
     window.anima.sendCommand({ type: 'gesture', value: name });
+});
+$('#pose-reset-all').addEventListener('click', () => {
+    poseOverrides = {};
+    renderPoseSliders();
+    window.anima.sendCommand({ type: 'poseOverridesClear' });
 });
 $('#pose-json').addEventListener('change', () => {
     try {

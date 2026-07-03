@@ -26,7 +26,7 @@ const SELF_TOOLS = [
     description: "Play a short body gesture/animation to express yourself.",
     parameters: {
       type: 'object', properties: {
-        gesture: { type: 'string', enum: ['wave', 'cheer', 'think', 'nod', 'recoil', 'bow', 'shrug', 'point', 'clap', 'peace', 'dance', 'facepalm', 'stretch'] }
+        gesture: { type: 'string', enum: ['wave', 'cheer', 'think', 'nod', 'recoil', 'bow', 'shrug', 'point', 'clap', 'peace', 'dance', 'facepalm', 'stretch', 'armsCrossed', 'handsOnHips', 'handsClasped', 'leanIn'] }
       }, required: ['gesture']
     }
   },

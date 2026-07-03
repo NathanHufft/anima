@@ -9,8 +9,9 @@
 //  into the spring-bone gravity direction so things drift even while she's still.
 //
 //  Everything here is additive rotation on the NORMALIZED humanoid rig (canonical
-//  T-pose), applied before vrm.update(). Head/neck are intentionally left to the
-//  cursor-follow code so the two systems never fight.
+//  T-pose), applied before vrm.update(). Head/neck ARE posed here now; the
+//  cursor-follow in avatar.js adds its offset ON TOP afterwards, so the two
+//  systems stack instead of fighting.
 // ============================================================================
 
 // Arms hang down at the sides. ARM_DOWN is this model's "down" angle for the
@@ -19,32 +20,82 @@
 const ARM_DOWN = -1.22;
 const D = ARM_DOWN;
 
+// Finger curl sign convention (normalized rig): curling toward the palm is
+// negative z on the LEFT hand and positive z on the RIGHT — the same signs as
+// lowering the arms. If a model's fingers bend backwards, flip these.
+export const CURL_L = -1;
+export const CURL_R = 1;
+
+// Soft natural curl for a relaxed hand (thumbs are left alone).
+const curlFingers = (side, sign, amt) => {
+  const out = {};
+  for (const f of ['Index', 'Middle', 'Ring', 'Little']) {
+    out[`${side}${f}Proximal`] = { z: sign * amt };
+    out[`${side}${f}Intermediate`] = { z: sign * amt * 1.2 };
+  }
+  return out;
+};
+
 const REST = {
   spine: { x: 0.02 },
   leftUpperArm: { z: D },
   rightUpperArm: { z: -D },
   leftLowerArm: { y: 0.12 },
   rightLowerArm: { y: -0.12 },
+  ...curlFingers('left', CURL_L, 0.18),
+  ...curlFingers('right', CURL_R, 0.18),
 };
 
-// Sustained posture per mood — torso only, so arms never swing oddly.
+// Sustained posture per mood. Torso sets the stance; head/neck/shoulders add
+// the body language. Everything is additive — cursor-follow stacks on top of
+// the head, so she keeps eye contact while holding the mood.
+// Shoulder signs: raise = left +z / right -z; roll forward = left -y / right +y.
 const MOOD = {
-  happy: { spine: { x: -0.03 }, chest: { x: -0.02 } },
+  happy: { spine: { x: -0.03 }, chest: { x: -0.02 }, head: { x: -0.03 } },
   relaxed: {},
   neutral: {},
-  surprised: { spine: { x: -0.05 } },
-  sad: { spine: { x: 0.11 }, chest: { x: 0.05 } },
-  angry: { spine: { x: 0.05 } },
-  joy: { spine: { x: -0.06 }, chest: { x: -0.03 } },
-  smug: { spine: { x: -0.02 }, chest: { x: -0.02 } },
-  shy: { spine: { x: 0.05 }, chest: { x: 0.04 } },
-  love: { spine: { x: -0.03 }, chest: { x: -0.02 } },
-  sleepy: { spine: { x: 0.07 }, chest: { x: 0.04 } },
-  wink: { spine: { x: -0.02 } },
+  surprised: {
+    spine: { x: -0.05 }, head: { x: -0.06 },
+    leftShoulder: { z: 0.08 }, rightShoulder: { z: -0.08 },
+  },
+  sad: {
+    spine: { x: 0.11 }, chest: { x: 0.05 }, neck: { x: 0.08 }, head: { x: 0.12 },
+    leftShoulder: { y: -0.1, z: 0.05 }, rightShoulder: { y: 0.1, z: -0.05 },
+  },
+  angry: {
+    spine: { x: 0.05 }, head: { x: 0.06 },
+    leftShoulder: { z: 0.1 }, rightShoulder: { z: -0.1 },
+  },
+  joy: { spine: { x: -0.06 }, chest: { x: -0.03 }, head: { x: -0.05 } },
+  smug: { spine: { x: -0.02 }, chest: { x: -0.02 }, head: { x: -0.04, z: 0.06 } },
+  shy: {
+    spine: { x: 0.05 }, chest: { x: 0.04 }, head: { x: 0.1, z: 0.08 },
+    leftShoulder: { y: -0.12, z: 0.08 }, rightShoulder: { y: 0.12, z: -0.08 },
+  },
+  love: { spine: { x: -0.03 }, chest: { x: -0.02 }, head: { x: -0.02, z: 0.08 } },
+  sleepy: { spine: { x: 0.07 }, chest: { x: 0.04 }, neck: { x: 0.06 }, head: { x: 0.1, z: 0.12 } },
+  wink: { spine: { x: -0.02 }, head: { z: 0.1 } },
 };
 
-const BONES = ['hips', 'spine', 'chest', 'leftUpperArm', 'rightUpperArm',
+const CORE_BONES = ['hips', 'spine', 'chest', 'neck', 'head'];
+const ARM_BONES = ['leftShoulder', 'rightShoulder', 'leftUpperArm', 'rightUpperArm',
   'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand'];
+const fingerBonesFor = (side) => ['Thumb', 'Index', 'Middle', 'Ring', 'Little'].flatMap(f =>
+  f === 'Thumb'
+    ? [`${side}ThumbMetacarpal`, `${side}ThumbProximal`, `${side}ThumbDistal`]
+    : [`${side}${f}Proximal`, `${side}${f}Intermediate`, `${side}${f}Distal`]);
+export const FINGER_BONES_LEFT = fingerBonesFor('left');
+export const FINGER_BONES_RIGHT = fingerBonesFor('right');
+
+// Grouped bone list — the Gesturizer drives all of these, and the Pose Lab in
+// settings.js renders its sliders from these groups (single source of truth).
+export const BONE_GROUPS = {
+  'Core & head': CORE_BONES,
+  'Shoulders & arms': ARM_BONES,
+  'Left fingers': FINGER_BONES_LEFT,
+  'Right fingers': FINGER_BONES_RIGHT,
+};
+const BONES = [...CORE_BONES, ...ARM_BONES, ...FINGER_BONES_LEFT, ...FINGER_BONES_RIGHT];
 
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const damp = (x, y, lambda, dt) => x + (y - x) * (1 - Math.exp(-lambda * dt));
@@ -67,28 +118,46 @@ export const POSES = {
     rightUpperArm: { z: D * 1.3 },
     rightLowerArm: { x: 0.5 },
     rightHand: { z: 0.3 },
+    rightShoulder: { z: -0.12 },
+    neck: { z: -0.04 },
+    head: { y: -0.1, z: -0.08 },              // friendly tilt toward the wave
+    ...curlFingers('right', CURL_R, -0.18),   // open the hand
   },
   recoil: {
     spine: { x: -0.14 },
     chest: { x: -0.06 },
+    neck: { x: -0.08 },
+    head: { x: -0.12 },                       // head snaps back too
+    leftShoulder: { z: 0.12 }, rightShoulder: { z: -0.12 },
   },
   cheer: {
     rightUpperArm: { z: D * 1.8 },
     leftUpperArm: { z: -D * 1.8 },
+    leftShoulder: { z: 0.1 }, rightShoulder: { z: -0.1 },
+    head: { x: -0.12 },                       // looking up
+    ...curlFingers('left', CURL_L, -0.18),    // open both hands
+    ...curlFingers('right', CURL_R, -0.18),
   },
   think: {
     rightUpperArm: { z: D * 0.95, x: -0.45, y: -0.25 },
     rightLowerArm: { x: -1.0, y: 1.45 },
     rightHand: { x: -0.25 },
     chest: { y: 0.05 },
+    neck: { x: 0.04 },
+    head: { x: 0.08, y: 0.15, z: -0.08 },     // pondering, gaze down-left
+    ...curlFingers('right', CURL_R, 0.2),     // loose fist against the chin
   },
   nod: {
-    spine: { x: 0.05 },
+    spine: { x: 0.03 },
+    neck: { x: 0.1 },
+    head: { x: 0.16 },                        // an actual head nod now
   },
   bow: {
     spine: { x: 0.4 },
     chest: { x: 0.18 },
     hips: { x: 0.05 },
+    neck: { x: 0.12 },
+    head: { x: 0.15 },                        // head follows the bow
   },
   shrug: {
     rightUpperArm: { z: D * 0.65, x: 0.45, y: -0.25 },
@@ -96,12 +165,21 @@ export const POSES = {
     rightLowerArm: { x: -0.8, y: -0.65 },
     leftLowerArm: { x: -0.8, y: 0.65 },
     chest: { y: 0.06 },
+    leftShoulder: { z: 0.25 }, rightShoulder: { z: -0.25 },  // real shoulder raise
+    head: { z: 0.1 },                         // quizzical tilt
+    ...curlFingers('left', CURL_L, -0.18),    // palms open
+    ...curlFingers('right', CURL_R, -0.18),
   },
   point: {
     rightUpperArm: { z: D * 0.95, x: -0.95, y: -0.12 },
     rightLowerArm: { x: -0.28 },
     rightHand: { x: -0.18 },
     chest: { y: -0.05 },
+    // curl everything but the index (index delta cancels the rest-pose curl)
+    rightIndexProximal: { z: -CURL_R * 0.18 }, rightIndexIntermediate: { z: -CURL_R * 0.22 },
+    rightMiddleProximal: { z: CURL_R * 1.2 }, rightMiddleIntermediate: { z: CURL_R * 1.3 },
+    rightRingProximal: { z: CURL_R * 1.2 }, rightRingIntermediate: { z: CURL_R * 1.3 },
+    rightLittleProximal: { z: CURL_R * 1.2 }, rightLittleIntermediate: { z: CURL_R * 1.3 },
   },
   clap: {
     rightUpperArm: { z: -D * 0.25, x: -1.06 },
@@ -109,10 +187,19 @@ export const POSES = {
     rightLowerArm: { x: -0.23, z: 0.39 },
     leftLowerArm: { x: -0.23, z: -0.39 },
     chest: { x: -0.025 },
+    head: { x: 0.03 },
+    ...curlFingers('left', CURL_L, -0.15),    // flatten the hands to clap
+    ...curlFingers('right', CURL_R, -0.15),
   },
   peace: {
     rightUpperArm: { z: D * 1.5 },
     rightLowerArm: { x: -1.4 },
+    // ✌ — index + middle straight, ring + little curled, thumb tucked
+    rightIndexProximal: { z: -CURL_R * 0.18 }, rightIndexIntermediate: { z: -CURL_R * 0.22 },
+    rightMiddleProximal: { z: -CURL_R * 0.18 }, rightMiddleIntermediate: { z: -CURL_R * 0.22 },
+    rightRingProximal: { z: CURL_R * 1.2 }, rightRingIntermediate: { z: CURL_R * 1.3 },
+    rightLittleProximal: { z: CURL_R * 1.2 }, rightLittleIntermediate: { z: CURL_R * 1.3 },
+    rightThumbProximal: { y: -0.5 },
   },
   dance: {
     hips: { y: 0.16, z: 0.10 },
@@ -129,16 +216,70 @@ export const POSES = {
     rightHand: { x: -0.35 },
     chest: { x: 0.10 },
     spine: { x: 0.06 },
+    neck: { x: 0.08 },
+    head: { x: 0.22 },                        // head drops into the hand
   },
   stretch: {
     rightUpperArm: { z: D * 1.9 },
     leftUpperArm: { z: -D * 1.9 },
     spine: { x: -0.08 },
+    leftShoulder: { z: 0.15 }, rightShoulder: { z: -0.15 },
+    head: { x: -0.15 },                       // face up mid-stretch
+    ...curlFingers('left', CURL_L, -0.18),    // fingers splayed
+    ...curlFingers('right', CURL_R, -0.18),
+  },
+  armsCrossed: {
+    // fold both forearms inward across the chest (frontal-plane z fold, like
+    // clap's close-in). Right arm sits slightly more forward so it lies on top.
+    rightUpperArm: { x: -0.55, z: D * 0.1 },
+    leftUpperArm: { x: -0.35, z: -D * 0.1 },
+    rightLowerArm: { z: 2.0 },
+    leftLowerArm: { z: -2.0 },
+    rightHand: { y: 0.25 },
+    leftHand: { y: -0.25 },
+    chest: { x: -0.03 },
+    spine: { x: -0.02 },
+  },
+  handsOnHips: {
+    // elbows flare out, forearms fold inward so the hands land at the hips
+    rightUpperArm: { z: D * 0.35 },
+    leftUpperArm: { z: -D * 0.35 },
+    rightLowerArm: { z: 1.75 },
+    leftLowerArm: { z: -1.75 },
+    rightHand: { z: 0.35, y: 0.25 },
+    leftHand: { z: -0.35, y: -0.25 },
+    chest: { x: -0.04 },
+  },
+  handsClasped: {
+    // arms slightly forward, forearms fold in until the hands meet in front
+    rightUpperArm: { x: -0.3, z: D * 0.05 },
+    leftUpperArm: { x: -0.3, z: -D * 0.05 },
+    rightLowerArm: { z: 1.15 },
+    leftLowerArm: { z: -1.15 },
+    rightHand: { z: 0.2, y: 0.25 },
+    leftHand: { z: -0.2, y: -0.25 },
+    head: { x: 0.04 },
+    ...curlFingers('left', CURL_L, 0.15),     // fingers wrap together gently
+    ...curlFingers('right', CURL_R, 0.15),
+  },
+  leanIn: {
+    hips: { x: 0.05 },
+    spine: { x: 0.1 },
+    chest: { x: 0.07 },
+    neck: { x: -0.08 },
+    head: { z: 0.08 },
   },
 };
 
 let poseOverrides = {};
-const poseFor = (name) => poseOverrides[name] || POSES[name];
+// Overrides MERGE over the base pose per-bone. (Whole-pose replacement meant
+// overrides saved before head/shoulders/fingers existed would erase those
+// bones from every tuned gesture.)
+const poseFor = (name) => {
+  const base = POSES[name] || {};
+  const over = poseOverrides[name];
+  return over ? { ...base, ...over } : base;
+};
 
 // ---- one-shot gesture timelines: gen(p 0..1) -> { bone:{x,y,z} } -------------
 // Arm raises are written as multiples of D so they track ARM_DOWN's sign:
@@ -148,11 +289,10 @@ const GESTURES = {
     const up = clamp(p / 0.18), down = 1 - clamp((p - 0.78) / 0.22), amp = up * down;
     const osc = Math.sin(p * Math.PI * 6);
     const wave = poseFor('wave');
-    return {
-      rightUpperArm: { z: (wave.rightUpperArm?.z || 0) * amp },
-      rightLowerArm: { x: (wave.rightLowerArm?.x || 0) * amp * osc },
-      rightHand: { z: (wave.rightHand?.z || 0) * amp * osc },
-    };
+    const out = scalePose(wave, amp);           // shoulder/head/fingers ride the envelope
+    out.rightLowerArm = { x: (wave.rightLowerArm?.x || 0) * amp * osc };
+    out.rightHand = { z: (wave.rightHand?.z || 0) * amp * osc };
+    return out;
   },
   recoil(p) {                                   // quick surprised lean back (no arm swing)
     const a = (1 - p) * (1 - p) * clamp(p / 0.08);
@@ -188,13 +328,13 @@ const GESTURES = {
     const close = Math.max(0, env - 0.18) / 0.82;
     const tap = Math.sin(p * Math.PI * 8) * close;
     const clap = poseFor('clap');
-    return {
-      rightUpperArm: { x: (clap.rightUpperArm?.x || 0) * forward, z: (clap.rightUpperArm?.z || 0) * close },
-      leftUpperArm: { x: (clap.leftUpperArm?.x || 0) * forward, z: (clap.leftUpperArm?.z || 0) * close },
-      rightLowerArm: { x: (clap.rightLowerArm?.x || 0) * forward - tap * 0.03, z: (clap.rightLowerArm?.z || 0) * close + tap * 0.035 },
-      leftLowerArm: { x: (clap.leftLowerArm?.x || 0) * forward - tap * 0.03, z: (clap.leftLowerArm?.z || 0) * close - tap * 0.035 },
-      chest: { x: -0.025 * env - Math.max(0, tap) * 0.006 },
-    };
+    const out = scalePose(clap, close);         // head/fingers ride the close-in
+    out.rightUpperArm = { x: (clap.rightUpperArm?.x || 0) * forward, z: (clap.rightUpperArm?.z || 0) * close };
+    out.leftUpperArm = { x: (clap.leftUpperArm?.x || 0) * forward, z: (clap.leftUpperArm?.z || 0) * close };
+    out.rightLowerArm = { x: (clap.rightLowerArm?.x || 0) * forward - tap * 0.03, z: (clap.rightLowerArm?.z || 0) * close + tap * 0.035 };
+    out.leftLowerArm = { x: (clap.leftLowerArm?.x || 0) * forward - tap * 0.03, z: (clap.leftLowerArm?.z || 0) * close - tap * 0.035 };
+    out.chest = { x: -0.025 * env - Math.max(0, tap) * 0.006 };
+    return out;
   },
   peace(p) {                                    // right hand up by the head (✌ pose)
     const up = clamp(p / 0.2), down = 1 - clamp((p - 0.7) / 0.3), a = up * down;
@@ -209,6 +349,8 @@ const GESTURES = {
       hips: { y: (dance.hips?.y || 0) * s * env, z: (dance.hips?.z || 0) * s * env },
       spine: { y: (dance.spine?.y || 0) * s * env },
       chest: { y: (dance.chest?.y || 0) * c * env },
+      neck: { z: s * 0.06 * env },
+      head: { z: s * 0.12 * env, y: c * 0.1 * env },   // head sways with the beat
       rightUpperArm: { z: (dance.rightUpperArm?.z || 0) * env + s * 0.45, x: (dance.rightUpperArm?.x || 0) * c },
       leftUpperArm: { z: (dance.leftUpperArm?.z || 0) * env - s * 0.45, x: (dance.leftUpperArm?.x || 0) * c },
       rightLowerArm: { x: (dance.rightLowerArm?.x || 0) * Math.abs(s) },
@@ -223,11 +365,28 @@ const GESTURES = {
     const a = Math.sin(clamp(p) * Math.PI);
     return scalePose(poseFor('stretch'), a);
   },
+  armsCrossed(p) {                              // fold arms over the chest, hold, release
+    const a = Math.sin(clamp(p) * Math.PI);
+    return scalePose(poseFor('armsCrossed'), a);
+  },
+  handsOnHips(p) {                              // confident hands-on-hips stance
+    const a = Math.sin(clamp(p) * Math.PI);
+    return scalePose(poseFor('handsOnHips'), a);
+  },
+  handsClasped(p) {                             // hands together in front, polite/listening
+    const a = Math.sin(clamp(p) * Math.PI);
+    return scalePose(poseFor('handsClasped'), a);
+  },
+  leanIn(p) {                                   // curious lean toward the screen
+    const up = clamp(p / 0.25), down = 1 - clamp((p - 0.7) / 0.3);
+    return scalePose(poseFor('leanIn'), up * down);
+  },
 };
 const GESTURE_DUR = {
   wave: 2.2, recoil: 0.7, cheer: 1.4, think: 1.8, nod: 0.9,
   bow: 1.8, shrug: 1.2, point: 1.6, clap: 1.6, peace: 1.6,
   dance: 3.0, facepalm: 1.8, stretch: 2.0,
+  armsCrossed: 3.0, handsOnHips: 2.6, handsClasped: 2.6, leanIn: 1.8,
 };
 
 export class Gesturizer {
@@ -239,12 +398,14 @@ export class Gesturizer {
     this.moodCur = {};      // smoothed mood offsets
     this.gesture = null;    // { name, t, dur }
     this.talking = false;
+    this._cur = {};         // our own smoothed per-bone state (see update())
     this._windPhase = Math.random() * 10;
   }
 
   attach(vrm) {
     this.vrm = vrm;
     this.moodCur = {};
+    this._cur = {};
     // snapshot original spring-bone gravity so we can modulate it as "breeze"
     this._joints = [];
     try {
@@ -315,13 +476,18 @@ export class Gesturizer {
       else { const off = GESTURES[this.gesture.name](p); for (const b in off) add(acc, b, off[b]); }
     }
 
-    // apply: damp each controlled bone toward its accumulated target
+    // apply: damp each controlled bone toward its accumulated target.
+    // We damp OUR OWN state (not node.rotation) so additive effects layered on
+    // afterwards — like the cursor-follow head offset in avatar.js — never
+    // pollute the damping.
     for (const b of BONES) {
       const node = this.get(b); if (!node) continue;
       const a = acc[b] || { x: 0, y: 0, z: 0 };
-      node.rotation.x = damp(node.rotation.x, a.x, 12, dt);
-      node.rotation.y = damp(node.rotation.y, a.y, 12, dt);
-      node.rotation.z = damp(node.rotation.z, a.z, 12, dt);
+      const cur = (this._cur[b] ||= { x: node.rotation.x, y: node.rotation.y, z: node.rotation.z });
+      cur.x = damp(cur.x, a.x, 12, dt);
+      cur.y = damp(cur.y, a.y, 12, dt);
+      cur.z = damp(cur.z, a.z, 12, dt);
+      node.rotation.set(cur.x, cur.y, cur.z);
     }
 
     // 6) ambient breeze: nudge spring-bone gravity so hair/skirt drift at rest

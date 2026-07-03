@@ -134,7 +134,10 @@ async function send() {
     avatar.setExpression(mood);
     if (mood === 'surprised') avatar.playGesture('recoil');
     else if (mood === 'happy' || mood === 'joy') avatar.playGesture('cheer');
-    else if (mood === 'shy') avatar.playGesture('shrug');
+    else if (mood === 'shy') avatar.playGesture('handsClasped');
+    else if (mood === 'angry') avatar.playGesture('armsCrossed');
+    else if (mood === 'smug') avatar.playGesture('handsOnHips');
+    else if (mood === 'love') avatar.playGesture('leanIn');
     else if (mood === 'sleepy') avatar.playGesture('stretch');
     sayOut(clean, mood);
   } catch (err) {
@@ -351,6 +354,7 @@ window.anima.onCommand(async (cmd) => {
     case 'expression': avatar.setExpression(cmd.value); break;
     case 'gesture': avatar.playGesture(cmd.value); break;
     case 'poseOverride': avatar.setPoseOverride(cmd.name, cmd.pose); break;
+    case 'poseOverridesClear': avatar.setPoseOverrides({}); break;
     case 'posePreview': avatar.setPoseOverride(cmd.name, cmd.pose); avatar.playGesture(cmd.name); break;
     case 'appearance':
       avatar.setAppearance(cmd.zone, cmd.color);

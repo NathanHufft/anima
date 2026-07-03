@@ -213,6 +213,10 @@
                 <button data-gesture="dance">dance</button>
                 <button data-gesture="facepalm">facepalm</button>
                 <button data-gesture="stretch">stretch</button>
+                <button data-gesture="armsCrossed">arms crossed</button>
+                <button data-gesture="handsOnHips">hands on hips</button>
+                <button data-gesture="handsClasped">hands clasped</button>
+                <button data-gesture="leanIn">lean in</button>
             </div>
 
             <div class="divider"><span>Pose Lab</span></div>
@@ -225,6 +229,7 @@
                     <div class="pose-lab-actions">
                         <button id="pose-preview" class="ghost-btn">Preview</button>
                         <button id="pose-reset" class="ghost-btn">Reset</button>
+                        <button id="pose-reset-all" class="ghost-btn" title="Clear every saved pose override">Reset all</button>
                     </div>
                 </div>
                 <div id="pose-sliders"></div>
@@ -233,7 +238,9 @@
                     <textarea id="pose-json" rows="5" spellcheck="false"></textarea>
                 </label>
                 <p class="hint">Adjust sliders and preview live on the avatar. Save persists the pose override locally;
-                    copy the JSON when you want to bake it into poses.js.</p>
+                    copy the JSON when you want to bake it into poses.js. Head/neck values combine with cursor-follow
+                    (follow adds on top). Finger curl: left hand curls toward the palm with −z, right hand with +z —
+                    if fingers bend backwards on your model, flip the sign.</p>
             </div>
         </div>
 
