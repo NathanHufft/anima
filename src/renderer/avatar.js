@@ -29,6 +29,14 @@ const EXPR_DEFS = {
 };
 const BASE_EXPR = ['happy', 'angry', 'sad', 'relaxed', 'surprised'];
 
+// VRoid tags every material with a category token in its name; we match on it
+// to recolor "zones" (hair, skin, dress…) live. Used by the set_appearance tool.
+const APPEARANCE_ZONES = {
+  hair:  /_HAIR/i,     skin:  /_SKIN/i,   eyes:  /EyeIris/i,
+  lips:  /FaceMouth/i, brows: /FaceBrow/i,
+  dress: /Onepiece/i,  top:   /Tops/i,    shoes: /Shoes/i,
+};
+
 export class Avatar {
   constructor({ canvas, fallbackEl }) {
     this.canvas = canvas;
@@ -129,6 +137,7 @@ export class Avatar {
 
     this.gestures.attach(vrm);
     this._frameUpperBody();
+    this._captureAppearance();   // snapshot original colors so reset works
     this._fallbackMode = false;
     this.fallbackEl.hidden = true;
     this.canvas.style.opacity = '1';
@@ -167,6 +176,50 @@ export class Avatar {
   setIdleMotion(on) { this.gestures.setIdle(on); }
   setPoseOverrides(overrides) { this.gestures.setPoseOverrides(overrides); }
   setPoseOverride(name, pose) { this.gestures.setPoseOverride(name, pose); }
+
+  // appearance: live recolor of the VRoid MToon materials, by zone ----------
+  _eachMToon(fn) {
+    if (!this.vrm) return;
+    this.vrm.scene.traverse((o) => {
+      const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+      for (const m of mats) if (m && m.isMToonMaterial) fn(m);
+    });
+  }
+  _captureAppearance() {
+    this._origColors = new Map();
+    this._eachMToon((m) => this._origColors.set(m.uuid, {
+      color: m.color?.clone() || null,
+      shade: m.shadeColorFactor?.clone() || null,
+    }));
+  }
+  // zone ∈ APPEARANCE_ZONES; hex like '#4aa3ff'. Tints the MToon base + shade.
+  setAppearance(zone, hex) {
+    const re = APPEARANCE_ZONES[zone];
+    if (!re) return false;
+    const col = new THREE.Color(hex);
+    let hits = 0;
+    this._eachMToon((m) => {
+      if (!re.test(m.name)) return;
+      m.color?.copy(col);
+      m.shadeColorFactor?.copy(col.clone().multiplyScalar(0.7)); // keep shadow tone consistent
+      m.needsUpdate = true;
+      hits++;
+    });
+    return hits > 0;
+  }
+  resetAppearance() {
+    this._eachMToon((m) => {
+      const o = this._origColors?.get(m.uuid);
+      if (!o) return;
+      if (o.color) m.color?.copy(o.color);
+      if (o.shade) m.shadeColorFactor?.copy(o.shade);
+      m.needsUpdate = true;
+    });
+  }
+  applyAppearanceMap(map) {            // { hair:'#..', dress:'#..' }
+    if (!map) return;
+    for (const [zone, hex] of Object.entries(map)) this.setAppearance(zone, hex);
+  }
 
   start() {
     const loop = () => {

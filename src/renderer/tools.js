@@ -30,6 +30,21 @@ const SELF_TOOLS = [
       }, required: ['gesture']
     }
   },
+  {
+    name: 'set_appearance',
+    description: "Recolor a part of your own body or outfit, live. zone is one of: hair, skin, eyes, lips, brows, dress, top, shoes. color is a hex code like '#4aa3ff' or a common color name.",
+    parameters: {
+      type: 'object', properties: {
+        zone: { type: 'string', enum: ['hair', 'skin', 'eyes', 'lips', 'brows', 'dress', 'top', 'shoes'] },
+        color: { type: 'string', description: "hex like '#4aa3ff', or a name like 'blue'" }
+      }, required: ['zone', 'color']
+    }
+  },
+  {
+    name: 'reset_appearance',
+    description: "Undo all your appearance recolors, back to your model's original colors.",
+    parameters: { type: 'object', properties: {}, required: [] }
+  },
 ];
 
 const MEMORY_TOOLS = [
@@ -143,6 +158,22 @@ export function memoryText() {
   return keys.map(k => `- ${k}: ${m[k]}`).join('\n');
 }
 
+// ----------------------------------------------------------------- color names
+// Lets the model pass either a hex code or a common color name to set_appearance.
+const NAMED_COLORS = {
+  black: '#1c1c22', white: '#f5f5f7', gray: '#8a8a93', grey: '#8a8a93',
+  red: '#e23b3b', pink: '#ff8fc7', orange: '#f39237', yellow: '#f2d64b',
+  green: '#3fbf6f', teal: '#2fb3a6', cyan: '#39d0e6', blue: '#4aa3ff',
+  navy: '#26324f', purple: '#8b5cf6', lavender: '#b9a7ff', violet: '#7c4dff',
+  brown: '#7a5136', silver: '#c9ccd6', gold: '#d9b44a', mint: '#93e6c0',
+  crimson: '#c0392b', magenta: '#e34bd0'
+};
+function normalizeColor(c) {
+  c = String(c || '').trim().toLowerCase();
+  if (/^#?[0-9a-f]{6}$/.test(c)) return c.startsWith('#') ? c : '#' + c;
+  return NAMED_COLORS[c] || null;
+}
+
 // ----------------------------------------------------------------- dispatcher
 export function makeRunTool(ctx) {
   const { avatar } = ctx;
@@ -156,6 +187,18 @@ export function makeRunTool(ctx) {
       case 'play_gesture':
         avatar.playGesture(args.gesture || 'nod');
         return `(played ${args.gesture})`;
+      case 'set_appearance': {
+        const zone = String(args.zone || '').toLowerCase();
+        const color = normalizeColor(args.color);
+        if (!color) return `I couldn't read the color "${args.color}".`;
+        const ok = avatar.setAppearance(zone, color);
+        if (ok) ctx.onAppearance?.(zone, color);
+        return ok ? `Recolored ${zone} to ${color}.` : `I don't have a "${zone}" part to recolor.`;
+      }
+      case 'reset_appearance':
+        avatar.resetAppearance();
+        ctx.onAppearance?.(null);
+        return 'Reset my colors to default.';
 
       // Tier 2 — memory
       case 'remember': {
